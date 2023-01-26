@@ -1,5 +1,5 @@
 // Tiny cmdline processor (-> github.com/xparq/Args)
-// v1.1
+// v1.2
 
 #include <string>
 #include <vector>
@@ -35,10 +35,10 @@ class Args
 
 		if (a[0] == '-' || a[0] == '/' && a.size() > 1) { // option, or -- or // (note: -/ and /- are options)
 			std::string new_opt;
-			if (a[1] == '-' && a.size() > 2) { // likely --long-option, or junk like --$G@%F
+			if (a[1] == '-' && a.size() > 2) { // likely --long-option, or junk like --$G@%F or ---...
 				new_opt = a.substr(2); // OK, we don't check now... ;)
 			} else if (a[1] != a[0]) { // a real short opt, or short opt. aggregate
-				new_opt = a.substr(1);
+				new_opt = a.substr(1, 1);
 			} else { // '--' or '//...' will be considered unnamed params
 				goto process_unnamed_param;
 			}

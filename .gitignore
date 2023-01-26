@@ -3,4 +3,5 @@
 *.o
 *.out
 tmp/
-
+*.tmp
+*.off

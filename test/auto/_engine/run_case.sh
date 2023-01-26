@@ -4,10 +4,10 @@ TEST_DIR=${TEST_DIR:-`pwd`}
 #echo Test dir is: \"$TEST_DIR\"
 
 . _engine/defs.sh
-
-case_variant_counter=0
+retval=$?; if [ "$retval" != "0" ]; then exit $retval; fi
 
 case_path=`get_case_path $1`
+retval=$?; if [ "$retval" != "0" ]; then exit $retval; fi
 
 #!
 #! Now we have a path to the test case, but it can be either a single file
@@ -15,8 +15,10 @@ case_path=`get_case_path $1`
 #!
 
 CASE=`get_case_name ${case_path}`
+retval=$?; if [ "$retval" != "0" ]; then exit $retval; fi
 
-echo "Running test case: \"${CASE}\" (at '${case_path}')"
+echo; echo CASE \"${CASE}\"
+	# (at '${case_path}')
 
 if [ ! -d  "${case_path}" ]; then
 	case_script="${case_path}"
@@ -59,7 +61,8 @@ test -f "${retfile}" && rm "${retfile}"
 
 
 # Finally, run the case...
-set failed=0
+failed=0
+case_variant_counter=0
 . "${case_script}"
 
 if [ "$?" != "0" ]; then
@@ -101,7 +104,7 @@ normalize_crlf "${outfile}"
 if [ $? == 0 ]; then
 	echo "  OK."
 else
-	echo "- !!! DIFFERS !!!"
+	echo "  -------------------------- FAILED! --------------------------"
 	set failed=1
 fi
 

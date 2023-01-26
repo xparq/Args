@@ -1,0 +1,6 @@
+# If i takes a param, this is an error!
+# But there's no error detection/handling in Args whatsoever yet...
+
+RUN args-test.exe -ixxxx 1
+
+EXPECT="some kinda' error"

@@ -4,9 +4,19 @@
 # Stuff here depends on the settings prepared by run_case!
 #
 
+
+ERROR(){
+	echo "- ERROR: $*" >&2
+}
+
+WARNING(){
+	echo "- WARNING: $*" >&2
+}
+
+
 if [ "${TEST_DIR}" == "" ]; then
-	echo "- ERROR: TEST_DIR not defined! Do it before init'ing the defs.!"
-	return 7
+	ERROR "TEST_DIR not defined! Do it before init'ing the defs.!"
+	return 6
 fi
 
 #!! Fall back on $TMP, $TEMP, /tmp etc...
@@ -14,11 +24,10 @@ TMP_DIR="${TEST_DIR}/tmp"
 if [ ! -d "${TMP_DIR}" ]; then
 	mkdir -p  "${TMP_DIR}"
 	if [ ! -d "${TMP_DIR}" ]; then
-		echo "- ERROR: Couldn't create tmp dir '${TMP_DIR}'!:"
+		ERROR "Couldn't create tmp dir '${TMP_DIR}'!:"
 		return 1
 	fi
-	echo "- WARNING: "${TMP_DIR}" did not exist, created."
-	return 7
+	WARNING "${TMP_DIR} did not exist, created."
 fi
 
 
@@ -26,11 +35,16 @@ get_case_path(){
 	case_path=${TEST_DIR}/$*
 	# Not enough just to check for empty $1...:
 	if [ "`realpath \"${case_path}\"`" == "`realpath \"${TEST_DIR}\"`" ]; then
-		echo "- ERROR: Invalid test case path '${case_path}'!"
+		ERROR "Invalid test case path '${case_path}'!"
 		return 1
 	fi
 	if [ ! -e "${case_path}" ]; then
-		if [ -e "${case_path}.case" ]; then case_path="${case_path}.case"; fi
+		if [ -e "${case_path}.case" ]; then
+			case_path="${case_path}.case"
+		else
+			ERROR "Test case '${case_path}' not found!"
+			return 1
+		fi
 	fi
 	echo ${case_path}
 }
@@ -43,15 +57,15 @@ get_case_name(){
 
 RUN(){
 	if [ "${CASE}" == "" ]; then
-		echo "- ERROR: test case name not set (via CASE=...)!"
+		ERROR 'test case name not set (via CASE=...)!'
 		return 3
 	fi
 
 	if [ "${case_variant_counter}" != "" ]; then
 		case_variant_counter=$(($case_variant_counter + 1))
-		echo "  Testing [${case_variant_counter}]: $*"
+		echo "  Test [${case_variant_counter}]: $*" >&2
 	else
-		echo "  Testing: $*"
+		echo "  Test: $*" >&2
 	fi
 
 	# $* is the whole command to run, as is, but, alas, that won't work
@@ -74,7 +88,7 @@ RUN_SH(){
 #!!	run sh -c "$*"
 
 	if [ "${CASE}" == "" ]; then
-		echo "- ERROR: test case name not set (via CASE=...)!"
+		ERROR 'test case name not set (via CASE=...)!'
 		return 3
 	fi
 	echo "  Testing: $*"
@@ -111,4 +125,3 @@ normalize_crlf(){
 #	"./issue 10.exe" --long
 # (Neither did any quoting, shift+quoting, backticking, $()ing, whatever... Which is now
 # understandable, in hinsight, but was a nightmare with a dual CMD / sh mindset! :) )
-

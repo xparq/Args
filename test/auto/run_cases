@@ -6,7 +6,6 @@ if [ "$*" == "" ]; then
 	find -name '*.case' -exec ${runner} \{\} \;
 else
 	for c in $*; do 
-		echo ${runner} $c
+		${runner} $c
 	done
 fi
-

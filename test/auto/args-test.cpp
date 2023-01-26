@@ -2,15 +2,6 @@
 #include <iostream>
 using namespace std;
 
-
-auto listvals(auto const& vect)
-{
-	for (auto v = vect.begin(); v != vect.end(); ++v)
-		cout << (v == vect.begin() ? "":", ")
-		     << *v
-		     << (v+1 == vect.end() ? "\n":"");
-};
-
 int main(int argc, char* argv[])
 {
 	Args args(argc, argv, {
@@ -21,14 +12,24 @@ int main(int argc, char* argv[])
 
 	//test: args = Args(argc, argv); // <- no args take params.
 
+//	auto listvals = [](auto vect) {
+//	};
+
 	cout << "-------- NAMED: \n";
 	for (auto const& p : args.named()) {
 		cout << p.first << (p.second.empty() ? "\n" : " = ");
-		listvals(p.second);
+		for (auto v = p.second.begin(); v != p.second.end(); ++v)
+			cout << (v == p.second.begin() ? "":", ")
+			     << *v
+			     << (v+1 == p.second.end() ? "\n":"");
 	}
 
 	cout << "-------- POSITIONAL: \n";
-	listvals(args.unnamed());
+        for (auto v = args.unnamed().begin(); v != args.unnamed().end(); ++v) {
+		cout << (v == args.unnamed().begin() ? "":", ")
+		     << *v
+		     << (v+1 == args.unnamed().end() ? "\n":"");
+	}
 
 	if (args["?"] || args["h"] || args["help"]) {
 		cout << "Usage: [-V] [--moons n]" << endl;
