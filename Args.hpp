@@ -75,7 +75,7 @@ public:
 	bool operator[](const std::string& opt) const { return named().find(opt) != named().end(); }
 
 	// Return nth (1st by default) value of arg, or "":
-	std::string operator()(const std::string& argname, int n = 1) const { return named().find(argname) == named().end()
+	std::string operator()(const std::string& argname, int n = 0) const { return named().find(argname) == named().end()
 	                                                            ? "" : (named().at(argname).size() <= n
 	                                                                   ? "" : named().at(argname)[n]); }
 
