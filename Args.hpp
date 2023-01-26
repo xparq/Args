@@ -1,5 +1,5 @@
 // Tiny cmdline processor (-> github.com/xparq/Args)
-// v1.0
+// v1.1
 
 #include <string>
 #include <vector>
@@ -84,4 +84,13 @@ public:
 	//! so this can't really be const _and_ fully practical... But constness it is now:
 	const std::map<std::string, std::vector<std::string>>& named()   const { return named_params; }
 
+	bool operator !() const { return argc < 2; }
+//!	operator bool() const { return !!*this; }
+	//! Enabling op bool would break args["opt"] due to a weird ambiguity, where the
+	//! compiler would suddenly think it may also match the builtin "opt"[int]! :-o
+	//! It's due to it trying a match with autoconverted bool->int before the "real thing".
+	//! The hacky workaround below may be good enough tho (but certainly not "good":
+	//! -> https://www.artima.com/articles/the-safe-bool-idiom)
+	//! Just comment it out, if you feel offended! ;)
+	operator const void*() const { return !(*this) ? nullptr : (void*)this; }
 };
