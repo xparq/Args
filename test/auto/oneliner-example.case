@@ -1,0 +1,4 @@
+RUN_SH ls $CASE.*
+
+EXPECT="oneliner-example.case
+"

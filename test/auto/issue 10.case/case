@@ -1,0 +1,20 @@
+# We are being sourced by the runner script, so the helpers have
+# already been setup:
+#. _engine/defs.sh
+
+exe="$CASE.exe"
+
+RUN "$exe" ---long
+RUN "$exe" --long
+RUN "$exe" -long
+RUN "$exe" long
+
+RUN "$exe" -longx
+RUN "$exe" --longx
+
+RUN "$exe" -- long
+
+
+EXPECT="\
+- 'long' was set
+"
