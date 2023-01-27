@@ -1,0 +1,10 @@
+﻿# Regression sentry from sfml-test:
+#
+#	Args args(argc, argv, {
+#	// This is supported by default anyway:
+#	//	{"moons", 1}, // number of moons to start with
+#	});
+#
+#
+# So, `--moons=9` is fine, `--moons` is not!
+# And `--moons 9` should not take that 9 for moons, but a free param.
