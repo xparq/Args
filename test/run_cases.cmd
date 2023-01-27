@@ -1,7 +1,10 @@
 @echo off
 
 if exist "%PROGRAMFILES%\Git\bin\sh.exe" (
-	 "%PROGRAMFILES%\Git\bin\sh.exe" run_cases %*
+	set _sh_="%PROGRAMFILES%\Git\bin\sh.exe"
 ) else (
-	busybox sh run_cases %*
+	set _sh_=busybox sh
+	rem (No check: it's a last-ditch fallback.)
 )
+
+%_sh_% run_cases %*

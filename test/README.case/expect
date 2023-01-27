@@ -1,7 +1,7 @@
-Usage: C:\sz\prj\Args\test\README.case\README.exe [-h] [-x] [--long]
+Usage: README.exe [-h] [-x] [--long]
 Some args are present.
 Some args are present.
-Usage: C:\sz\prj\Args\test\README.case\README.exe [-h] [-x] [--long]
+Usage: README.exe [-h] [-x] [--long]
 Some args are present.
 - 'x' was set
 Some args are present.

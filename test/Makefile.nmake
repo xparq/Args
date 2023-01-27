@@ -1,0 +1,5 @@
+EXE=args-test.exe
+DEPS=../Args.hpp
+
+$(EXE): $(DEPS)
+	build-vc

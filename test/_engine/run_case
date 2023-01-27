@@ -1,26 +1,29 @@
 #!/bin/sh
 
-TEST_DIR=${TEST_DIR:-`pwd`}
+export TEST_DIR=${TEST_DIR:-`pwd`}
 #echo Test dir is: \"$TEST_DIR\"
+_TEST_ENGINE_DIR=`dirname $0`
+export _TEST_ENGINE_DIR=`realpath ${_TEST_ENGINE_DIR}`
 
 . _engine/defs.sh
-retval=$?; if [ "$retval" != "0" ]; then exit $retval; fi
+retval=$?; if [[ "$retval" != "0" ]]; then exit $retval; fi
 
 case_path=`get_case_path $1`
-retval=$?; if [ "$retval" != "0" ]; then exit $retval; fi
+retval=$?; if [[ "$retval" != "0" ]]; then exit $retval; fi
 
 #!
 #! Now we have a path to the test case, but it can be either a single file
 #! or a dir. This script must handle the differences.
 #!
 
-CASE=`get_case_name ${case_path}`
-retval=$?; if [ "$retval" != "0" ]; then exit $retval; fi
+export CASE=`get_case_name ${case_path}`
+retval=$?; if [[ "$retval" != "0" ]]; then exit $retval; fi
 
-echo; echo CASE \"${CASE}\"
+echo "---------------------------------------------------------------"
+echo CASE \"${CASE}\"
 	# (at '${case_path}')
 
-if [ ! -d  "${case_path}" ]; then
+if [[ ! -d  "${case_path}" ]]; then
 	case_script="${case_path}"
 	TEST_CASE_DIR=`dirname "${case_path}"`
 else
@@ -29,7 +32,7 @@ else
 	TEST_CASE_DIR=${case_path}
 fi
 
-if [ ! -f "${case_script}" ]; then
+if [[ ! -e "${case_script}" ]]; then
 	echo "- ERROR: test case script '${case_script}' not found!"
 	return 1
 fi
@@ -59,20 +62,52 @@ test -f "${outfile}" && rm "${outfile}"
 test -f "${errfile}" && rm "${errfile}"
 test -f "${retfile}" && rm "${retfile}"
 
+# Run a build for the test case if it seems to need one... (and $MAKE is set)
+MAKE=`check_make_flavor`
+
+#!!the generic makefiles can't check *.cpp yet!
+cpp=`find "${TEST_CASE_DIR}" -maxdepth 1 -name '*.cpp' -print -quit`
+if [[ -n "${MAKE}" && -n "${cpp}" ]]; then
+	a=`realpath "${TEST_CASE_DIR}"`
+	b=`realpath "${TEST_DIR}"`
+	#!!shuld be less dumb...:
+	if [[ "$a" != "$b" ]]; then
+		export DIR_OFFSET=../
+	fi
+
+	if [ "${MAKE}" == "nmake" ]; then
+		#!BEWARE: /nologo, instead of -nologo, made Git-sh expand it to /full/path/nologo! :-o
+		mkcmd="nmake -nologo"
+		add_makefile="-f ${_TEST_ENGINE_DIR}/asset/TC-Makefile.nmake"
+	else
+		mkcmd="${MAKE}"
+		add_makefile="-f ${_TEST_ENGINE_DIR}/asset/TC-Makefile.gmake"
+	fi
+	if [[ -e "${TEST_CASE_DIR}/Makefile.${MAKE}" ]]; then
+		mkcmd="${mkcmd} -f Makefile.${MAKE}"
+	elif [[ ! -e "${TEST_CASE_DIR}/Makefile" ]]; then   # <- only add if there's no local Makefile
+		mkcmd="${mkcmd} ${add_makefile}"
+	fi
+
+	dirsave=`pwd`
+	cd "${TEST_CASE_DIR}"
+	${mkcmd}
+	cd "${dirsave}"
+fi
 
 # Finally, run the case...
 failed=0
 case_variant_counter=0
 . "${case_script}"
 
-if [ "$?" != "0" ]; then
+if [[ "$?" != "0" ]]; then
 	echo "- ERROR: test script failed with unexpected error! Aborting."
 	exit 99
 fi
 
 # Find or dyn. regenerate the expfile if defined in a .case script
-if [ -f         "${TEST_CASE_DIR}/expect" ]; then
-	expfile="${TEST_CASE_DIR}/expect"
+if [[ -e         "${TEST_CASE_DIR}/expect" ]]; then
+	 expfile="${TEST_CASE_DIR}/expect"
 # NOTE:
 # In a mixed "GNU tools on Windows" env (like mine) diff may not be able
 # to ignore CR/LF differences, so we need to strip those manually.
@@ -101,10 +136,10 @@ normalize_crlf "${outfile}"
 #echo diff -b "${outfile}" "${expfile}"
      diff -b "${outfile}" "${expfile}"
 
-if [ $? == 0 ]; then
+if [[ $? == 0 ]]; then
 	echo "  OK."
 else
-	echo "  -------------------------- FAILED! --------------------------"
+	echo "  !!!!!!!!!!!!!!!!!!!!!!!!! FAILED !!!!!!!!!!!!!!!!!!!!!!!!!"
 	set failed=1
 fi
 

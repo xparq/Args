@@ -1,0 +1,19 @@
+# Should come from the runner; empty for "root-level" cases:
+#DIR_OFFSET=../
+	# Subdir depth under the main test dir ($(TEST_DIR)):
+	# (Add trailing sep. for uniform prepending even if empty!)
+
+EXE=$(CASE).exe
+
+# BEWARE: GNU Make doesn't seem to support quoting target names with spaces, so:
+# https://stackoverflow.com/a/10571900/1479945
+space=$(subst ,, )
+espace=$(subst ,,\ )
+EXE_NAME_W_SPACES_ESCAPED=$(subst $(space),$(espace),$(EXE))
+
+src=$(EXE_NAME_W_SPACES_ESCAPED:.exe=.cpp)
+deps=$(DIR_OFFSET)../Args.hpp $(src)
+
+# Note: would still fail on any other whitespace, of course...
+$(EXE_NAME_W_SPACES_ESCAPED): $(deps)
+	"$(DIR_OFFSET)build-gcc.sh" $(src) $(DIR_OFFSET)

@@ -19,8 +19,8 @@ if [ "${TEST_DIR}" == "" ]; then
 	return 6
 fi
 
+export TMP_DIR="${TEST_DIR}/tmp"
 #!! Fall back on $TMP, $TEMP, /tmp etc...
-TMP_DIR="${TEST_DIR}/tmp"
 if [ ! -d "${TMP_DIR}" ]; then
 	mkdir -p  "${TMP_DIR}"
 	if [ ! -d "${TMP_DIR}" ]; then
@@ -87,9 +87,9 @@ RUN(){
 }
 
 SH(){
-#!!Doesn't work, maybe due to quoting problems?!
 #!!	run sh -c \"$*\"
 #!!	run sh -c "$*"
+#!!	- didn't work, maybe due to quoting problems?!
 
 	if [ "${CASE}" == "" ]; then
 		ERROR 'test case name not set (via CASE=...)!'
@@ -110,6 +110,20 @@ SH(){
 	sh -c "$cmd $args" >> "${TMP_DIR}/${CASE}.out" 2>> "${TMP_DIR}/${CASE}.err"
 	echo $? >> "${TMP_DIR}/${CASE}.retval"
 	cd "${savecd}"
+}
+
+
+check_make_flavor(){
+	if [[ -n "${MAKE}" ]]; then echo "${MAKE}"; return 0; fi
+
+	#! Must also check upper-cased, BusyBox(?) sometimes(?) converts env var names!...
+	if [[ -n "${VisualStudioVersion}" || -n "${VISUALSTUDIOVERSION}" ]]; then
+		echo nmake
+			# `/nologo` will be applied implicitly
+	else
+		echo gnumake
+			# Can't share Makefiles tho, so this dispatching is XOR, not OR... :-/
+	fi
 }
 
 

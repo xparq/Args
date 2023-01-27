@@ -1,13 +1,16 @@
 #!/bin/sh
 
-#echo Running Test set...
+# Preset to disable autodetect:
+#export MAKE=nmake
+#export MAKE=gnumake
+
 
 runner=_engine/run_case
 
 if [ "$*" == "" ]; then
 	find -name '*.case' -not -path "./_*/*" -exec ${runner} \{\} \;
 else
-	for c in $*; do 
-		${runner} $c
+	for c in "$*"; do 
+		${runner} "$c"
 	done
 fi

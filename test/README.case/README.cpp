@@ -9,7 +9,8 @@
 			{ cout << "Some args are present.\n"; }
 
 		if (!args || args["h"])
-			{ cout << "Usage: " << argv[0] << " "
+//			{ cout << "Usage: " << argv[0] << " "
+			{ cout << "Usage: " << "README.exe" << " "
 		               << "[-h] [-x] [--long]\n";
 		          return 0; }
 
