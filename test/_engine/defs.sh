@@ -75,14 +75,18 @@ RUN(){
 	shift
 	args=$*
 
+	# Kludge to prepend ./ if no dir in cmd:
+	normalized_dirpath=`dirname "${cmd}"`
+	cmd=${normalized_dirpath}/${cmd}
+
 	savecd=`pwd`
 	cd "${TEST_CASE_DIR}"
-	"$cmd" $args 1>> "${TMP_DIR}/${CASE}.out" 2>> "${TMP_DIR}/${CASE}.err"
+	"$cmd" $args >> "${TMP_DIR}/${CASE}.out" 2>> "${TMP_DIR}/${CASE}.err"
 	echo $? >> "${TMP_DIR}/${CASE}.retval"
 	cd "${savecd}"
 }
 
-RUN_SH(){
+SH(){
 #!!Doesn't work, maybe due to quoting problems?!
 #!!	run sh -c \"$*\"
 #!!	run sh -c "$*"
@@ -103,14 +107,14 @@ RUN_SH(){
 	savecd=`pwd`
 	cd "${TEST_CASE_DIR}"
 #	echo "sh -c \"$cmd $args\"" >> "${TMP_DIR}/${CASE}.cmd"
-	sh -c "$cmd $args" 1>> "${TMP_DIR}/${CASE}.out" 2>> "${TMP_DIR}/${CASE}.err"
+	sh -c "$cmd $args" >> "${TMP_DIR}/${CASE}.out" 2>> "${TMP_DIR}/${CASE}.err"
 	echo $? >> "${TMP_DIR}/${CASE}.retval"
 	cd "${savecd}"
 }
 
 
 normalize_crlf(){
-	dos2unix -u "$1"
+	dos2unix -u "$1" 2> /dev/null
 }
 
 #-----------------------------------------------------------------------------
