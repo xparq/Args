@@ -3,7 +3,7 @@
 runner=_engine/run_case
 
 if [ "$*" == "" ]; then
-	find -name '*.case' -exec ${runner} \{\} \;
+	find -name '*.case' -not -path "./_*/*" -exec ${runner} \{\} \;
 else
 	for c in $*; do 
 		${runner} $c

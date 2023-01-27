@@ -1,0 +1,12 @@
+RUN args-test.exe --flag --empty= --unknown=param --one spaced
+
+# The order is different, but that is irrelevant!
+#!!The test exe should sort them for us here!
+EXPECT="\
+-------- NAMED:
+empty
+flag
+one = spaced
+unknown = param
+-------- POSITIONAL:
+"

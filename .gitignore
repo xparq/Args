@@ -5,3 +5,5 @@
 tmp/
 *.tmp
 *.off
+*.old
+*.bak

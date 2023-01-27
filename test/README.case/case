@@ -4,3 +4,4 @@ RUN README.exe -h
 RUN README.exe -x
 RUN README.exe --long
 RUN README.exe -x --long
+RUN README.exe --unknown=77

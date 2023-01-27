@@ -20,4 +20,7 @@
 
 		if (args["long"])
 			{ cout << "- 'long' was set\n"; }
+
+		if (args["unknown"])
+			{ cout << "- 'unknown' was set to" << args("unknown") << "\n"; }
 	}
