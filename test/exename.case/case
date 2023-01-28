@@ -1,0 +1,11 @@
+RUN exename
+
+EXPECT="\
+exename.exe
+ -> 
+/ -> 
+// -> 
+x/ -> 
+/x -> x
+/x/ -> 
+"

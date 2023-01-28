@@ -1,5 +1,5 @@
 // Tiny cmdline processor (-> github.com/xparq/Args)
-// v1.4
+// v1.5
 
 #include <string>
 #include <vector>
@@ -39,6 +39,8 @@ public:
 	//! so named()[...] would fail, if const! But constness it is... (for consistency).
 	//! Use the op() and op[] accessors for direct element access!
 	const std::map<std::string, std::vector<std::string>>& named()   const { return named_params; }
+
+	std::string exename() { return std::string(argv[0]).substr(std::string(argv[0]).find_last_of("/\\") + 1); }
 
 	bool operator !() const { return argc < 2; }
 //!	operator bool() const { return !!*this; }

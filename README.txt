@@ -11,7 +11,7 @@
 			{ cout << "Some args are present.\n"; }
 
 		if (!args || args["h"])
-			{ cout << "Usage: " << argv[0] << " "
+			{ cout << "Usage: " << args.exename() << " "
 		               << "[-h] [-x] [--long]\n";
 		          return 0; }
 
@@ -22,5 +22,5 @@
 			{ cout << "- 'long' was set\n"; }
 
 		if (args["unknown"])
-			{ cout << "- 'unknown' was set to" << args("unknown") << "\n"; }
+			{ cout << "- 'unknown' was set to '" << args("unknown") << "'\n"; }
 	}
