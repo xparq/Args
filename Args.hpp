@@ -1,9 +1,10 @@
 // Tiny cmdline processor (-> github.com/xparq/Args)
-// v1.3
+// v1.4
 
 #include <string>
 #include <vector>
 #include <map>
+#include <cstddef> // size_t
 // For debugging/testing only:
 //#include <cassert>
 //#include <iostream> // cerr
@@ -29,7 +30,7 @@ public:
 	bool operator[](const std::string& opt) const { return named().find(opt) != named().end(); }
 
 	// Return nth (1st by default) value of arg, or "":
-	std::string operator()(const std::string& argname, int n = 0) const { return named().find(argname) == named().end()
+	std::string operator()(const std::string& argname, size_t n = 0) const { return named().find(argname) == named().end()
 	                                                            ? "" : (named().at(argname).size() <= n
 	                                                                   ? "" : named().at(argname)[n]); }
 
