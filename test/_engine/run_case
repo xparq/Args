@@ -140,7 +140,7 @@ if [[ $? == 0 ]]; then
 	echo "  OK."
 else
 	echo "  !!!!!!!!!!!!!!!!!!!!!!!!! FAILED !!!!!!!!!!!!!!!!!!!!!!!!!"
-	set failed=1
+	failed=1
 fi
 
 exit ${failed}

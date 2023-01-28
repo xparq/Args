@@ -8,7 +8,8 @@
 runner=_engine/run_case
 
 if [ "$*" == "" ]; then
-	find -name '*.case' -not -path "./_*/*" -exec ${runner} \{\} \;
+#22 <-	find -name '*.case' -not -path "./_*/*" -exec ${runner} \{\} \;
+	find -name '*.case' -not -path "./_*/*" -print0 | xargs -0 -n1 ${runner}
 else
 	for c in "$*"; do 
 		${runner} "$c"
