@@ -1,13 +1,12 @@
-// Tiny cmdline processor (-> github.com/xparq/Args)
-// v1.5
+// Tiny "functional" cmdline processor (-> github.com/xparq/Args)
+// v1.6
 
 #include <string>
 #include <vector>
 #include <map>
 #include <cstddef> // size_t
-// For debugging/testing only:
-//#include <cassert>
-//#include <iostream> // cerr
+#include <cassert>
+//#include <iostream> // cerr (for debugging)
 
 class Args
 {
@@ -40,10 +39,17 @@ public:
 	//! Use the op() and op[] accessors for direct element access!
 	const std::map<std::string, std::vector<std::string>>& named()   const { return named_params; }
 
-	std::string exename() { return std::string(argv[0]).substr(std::string(argv[0]).find_last_of("/\\") + 1); }
+	// Remember: this is coming from the command that eventually launched the exe, so it
+	// could be "anything"... E.g. no guarantee that it ends with ".exe" on Windows etc.
+	std::string exename(bool keep_as_is = false, std::string ext = ".exe") {
+		// Anyway, if it has a path, remove it:
+		std::string basename(std::string(argv[0]).substr(std::string(argv[0]).find_last_of("/\\") + 1));
+		if (keep_as_is) { return basename; }
+		else { return basename.substr(0, basename.rfind(ext)); }
+	}
 
 	bool operator !() const { return argc < 2; }
-//!	operator bool() const { return !!*this; }
+//	operator bool() const { return !!*this; }
 	//! Enabling op bool would break args["opt"] due to a weird ambiguity, where the
 	//! compiler would suddenly think it may also match the builtin "opt"[int]! :-o
 	//! It's due to it trying a match with autoconverted bool->int before the "real thing".
@@ -67,7 +73,7 @@ protected:
 
 		if (values_to_take > 0) {
 	//std::cerr << "- eating '"<< a <<"' as param. val. for " << last_opt << "\n";
-	//		assert(!last_opt.empty());
+			assert(!last_opt.empty());
 			named_params[last_opt].emplace_back(a);
 			return proc_next(last_opt, --values_to_take);
 		}

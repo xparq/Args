@@ -7,11 +7,27 @@
 
 runner=_engine/run_case
 
+errors=0
+
 if [ "$*" == "" ]; then
 #22 <-	find -name '*.case' -not -path "./_*/*" -exec ${runner} \{\} \;
+	# Still not sure how robust is the final error state with find + xargs!...
 	find -name '*.case' -not -path "./_*/*" -print0 | xargs -0 -n1 ${runner}
+	errors=$?
 else
 	for c in "$*"; do 
 		${runner} "$c"
+		if [ ! $? -eq 0 ]; then errors=$(($errors + 1)); fi
 	done
 fi
+
+#echo $errors
+	# "123" is most certainly NOT the number of failed cases (it's 1 now...),
+	# but I'm too tired to debug it now...
+if [ "$errors" == "0" ]; then
+	echo "All OK."
+else
+	echo "-------- THERE HAVE BEEN FAILED CASES! :-("
+fi
+
+exit $errors

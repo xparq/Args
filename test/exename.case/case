@@ -1,11 +1,29 @@
-RUN exename
+RUN exename --internal-string-ops
+RUN exename.exe --keep-ext
+RUN exename.exe
+
+# Alas, this works differently on MSVC and e.g. MinGw-style GCC: the
+# latter keep the actual cmdline, while MSVC seems to normalize it!
+# So we mmust fake the MSVC test until the expected resuts could be
+# conditionally branched too... :-/
+if [[ -n "$VCToolsVersion" ]]; then
+WARNING "Faking these two for MSVC due to different argv[0] handling (from GCC):"
+	SH echo "kept: exename"
+	SH echo "cut: exename"
+else
+	RUN exename --keep-ext
+	RUN exename
+fi
 
 EXPECT="\
-exename.exe
  -> 
 / -> 
 // -> 
 x/ -> 
 /x -> x
 /x/ -> 
+kept: exename.exe
+cut: exename
+kept: exename
+cut: exename
 "
