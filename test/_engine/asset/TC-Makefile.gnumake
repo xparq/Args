@@ -1,0 +1,16 @@
+#!!Leftover Windows dependency, clean it up!
+EXE=$(CASE).exe
+
+# BEWARE: GNUMake doesn't seem to support quoting target names with spaces, so:
+# https://stackoverflow.com/a/10571900/1479945
+space=$(subst ,, )
+espace=$(subst ,,\ )
+EXE_NAME_W_SPACES_ESCAPED=$(subst $(space),$(espace),$(EXE))
+
+src=$(EXE_NAME_W_SPACES_ESCAPED:.exe=.cpp)
+deps=$(TEST_DIR)/../Args.hpp $(src)
+
+# Note: would still fail on any other whitespace, of course...
+$(EXE_NAME_W_SPACES_ESCAPED): $(deps)
+#	"$(TEST_ENGINE_DIR)/build.sh"  $(src)
+	"$(TEST_ENGINE_DIR)/build.sh"  "$@" "$?"

@@ -1,6 +1,6 @@
 RUN args-test.exe --one 12345 --unknown=abc --one=-99 
 
-EXPECT="\
+EXPECT "\
 -------- NAMED:
 one = -99
 unknown = abc

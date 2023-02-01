@@ -1,4 +1,4 @@
 SH ls $CASE.*
 
-EXPECT="oneliner-example.case
+EXPECT "oneliner-example.case
 "

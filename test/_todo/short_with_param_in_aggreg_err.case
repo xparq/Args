@@ -3,4 +3,4 @@
 
 RUN args-test.exe -ixxxx 1
 
-EXPECT="some kinda' error"
+EXPECT "some kinda' error"

@@ -1,18 +1,20 @@
-# Should come from the runner; empty for "root-level" cases:
-#DIR_OFFSET=../
-	# Subdir depth under the main test dir ($(TEST_DIR)):
-	# (Add trailing sep. for uniform prepending even if empty!)
-
 # BEWARE: NMake fails to execute commands as ../cmd, but ..\cmd works! :-o So:
 DIR_OFFSET_BACKSLASH_FIXUP=$(DIR_OFFSET:/=\)
+TEST_DIR_BACKSLASH_FIXUP=$(TEST_DIR:/=\)
+TEST_ENGINE_DIR_BS_FIXUP=$(TEST_ENGINE_DIR:/=\)
 
 EXE=$(CASE).exe
 src=$(EXE:.exe=.cpp)
-deps=$(DIR_OFFSET)../Args.hpp "$(src)"
 
 # Must be quoted for any spaces in the name! (Don't ask how much time
 # I wasted on this simple rule mysteriously executing twice! :) )
 TARGET_NAME_W_SPACES_QUOTED="$(EXE)"
+
+src_quoted="$(src)"
+
+deps=$(TEST_DIR_BACKSLASH_FIXUP)/../Args.hpp $(src_quoted)
+
 # Note: would still fail on any other whitespace, of course...
 $(TARGET_NAME_W_SPACES_QUOTED): $(deps)
-	$(DIR_OFFSET_BACKSLASH_FIXUP)build-vc "$(src)" $(DIR_OFFSET)
+#	@busybox sh $(TEST_DIR_BACKSLASH_FIXUP)\build.sh "$(src)"
+	@busybox sh $(TEST_ENGINE_DIR_BS_FIXUP)\build.sh  $@ $?

@@ -1,22 +1,36 @@
 #!/bin/sh
-
-# Preset to disable autodetect:
-#export MAKE=nmake
-#export MAKE=gnumake
-
-
-runner=_engine/run_case
+_self=`dirname $0`
+export TEST_DIR=`realpath $_self`
+export _TEST_ENGINE_DIR=$TEST_DIR/_engine
+if [[ ! -e "$_TEST_ENGINE_DIR" ]]; then { echo "Invalid dir. structure?!"; exit 1; } fi
+. $_TEST_ENGINE_DIR/defs.sh
 
 errors=0
 
+tc_runner=$_TEST_ENGINE_DIR/run_case
 if [ "$*" == "" ]; then
 #22 <-	find -name '*.case' -not -path "./_*/*" -exec ${runner} \{\} \;
 	# Still not sure how robust is the final error state with find + xargs!...
-	find -name '*.case' -not -path "./_*/*" -print0 | xargs -0 -n1 ${runner}
-	errors=$?
+	name_pattern="*${TEST_CASE_FILE_EXT}" #! Lesson: ="'*$EXT'" would be an easy-to-make mistake!
+	save=`pwd`; cd $TEST_DIR
+
+		# This would be too eager (to go peek into non-TC-looking dirs for a CASE file,
+		# and still considering them TCs) -- OTOH without that this "ALL" branch would
+		# work differently from the selective branch, where, any explicitly named dir
+		# would be checked for a CASE file, indeed...:-/
+		# (And adding this would include test case dirs twice, BTW... :) )
+		#find ... -o -path "*/$TEST_CASE_SCRIPT_NAME"
+
+		# This set -f trick was the only f* way I could pass a variable to -name! :-o
+		set -f # FFS... :-/
+		find . \( -name "*${TEST_CASE_FILE_EXT}" -not -path '*/_*' -not -path '\"*/.*' \) \
+			-print0 | xargs -0 -n1 "$tc_runner"
+		# find * would result in nicer-looking paths (no ./), but not with set -f!...
+		errors=$?
+	cd $save
 else
-	for c in "$*"; do 
-		${runner} "$c"
+	for c in "$@"; do # <-- just words, not paths yet! (as opposed to the mess with `find`)
+		"$tc_runner" "$c"
 		if [ ! $? -eq 0 ]; then errors=$(($errors + 1)); fi
 	done
 fi
@@ -27,7 +41,7 @@ fi
 if [ "$errors" == "0" ]; then
 	echo "All OK."
 else
-	echo "-------- THERE HAVE BEEN FAILED CASES! :-("
+	echo "-------- THERE HAVE BEEN FAILED CASES!"
 fi
 
 exit $errors

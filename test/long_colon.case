@@ -1,6 +1,6 @@
 RUN args-test.exe --std:c++20 --stdeq=c++latest --empty:
 
-EXPECT="\
+EXPECT "\
 -------- NAMED:
 empty
 std = c++20

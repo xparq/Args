@@ -1,58 +1,53 @@
 #!/bin/sh
 
+# These must be set before initializing anything else (incl. calling defs.sh):
+#!! Which is pretty stupid, as that one could do this same thing, and then
+#!! the caller could just run this more easily...
 export TEST_DIR=${TEST_DIR:-`pwd`}
 #echo Test dir is: \"$TEST_DIR\"
 _TEST_ENGINE_DIR=`dirname $0`
 export _TEST_ENGINE_DIR=`realpath ${_TEST_ENGINE_DIR}`
 
-. _engine/defs.sh
+. "$_TEST_ENGINE_DIR/defs.sh"
 retval=$?; if [[ "$retval" != "0" ]]; then exit $retval; fi
 
-case_path=`get_case_path $1`
-retval=$?; if [[ "$retval" != "0" ]]; then exit $retval; fi
+case_path=`get_case_path $1` || FATAL "Test case \"$1\" not found!"
 
-#!
-#! Now we have a path to the test case, but it can be either a single file
-#! or a dir. This script must handle the differences.
-#!
+#!----------------------------------------------------------------------------
+#! Now we have a path to the test case (or ""!).
+#! It can be either a single file or a test case dir, though!
+#! This script must handle the differences.
+#!----------------------------------------------------------------------------
 
-export CASE=`get_case_name ${case_path}`
-retval=$?; if [[ "$retval" != "0" ]]; then exit $retval; fi
+CASE=`get_case_name ${case_path}` || FATAL "get_case_name can't really fail, so dunno what to say..." 99
+export CASE
+	#! WOW!... Jesus FC!... :-/ Had to separate the `export` from setting it,
+	#! otherwise $? coming from the func. would be reset to 0! :-ooo
+	#! -> "SC2155" (https://github.com/koalaman/shellcheck/wiki/SC2155)
 
 echo "---------------------------------------------------------------"
+DEBUG Identified \"$1\" as test case [$CASE] at \"$case_path\"
 echo CASE \"${CASE}\"
-	# (at '${case_path}')
 
 if [[ ! -d  "${case_path}" ]]; then
 	case_script="${case_path}"
 	TEST_CASE_DIR=`dirname "${case_path}"`
 else
-	#!!Do better than hardcodings like this:
-	case_script="${case_path}/case"
+	case_script="${case_path}/${TEST_CASE_SCRIPT_NAME}"
 	TEST_CASE_DIR=${case_path}
 fi
 
 if [[ ! -e "${case_script}" ]]; then
-	echo "- ERROR: test case script '${case_script}' not found!"
-	return 1
+	FATAL "Test script not found: \"${case_script}\"!"
 fi
 
 #
 # Run a test case via a .case definition...
 #
-#!!?? Should also support running any arbitrary exe directly, letting it
-#!!?? not interfere with the test tools at all; in that case a separate script
-#!!?? should tell what the expected results are (not the .case file itself).
-#!!   
-#!!   Could always be just run as test case variant, which are native exes anyway!
-#!!   
 
-#
-#!! Depending on whether this is a native exe or an instrumented .case script,
-#!! the output needs to be handled differently: full redirection for 
-#
-
-# Work file layout... (Preparing the exp. results file usually requires running the case first!)
+# Prep. the tmp work file locations...
+#! Note: preparing the exp. results file requires running the case script
+#!       first for its EXPECT clauses, if it has no standalone EXPECT file!
 outfile="${TMP_DIR}/${CASE}.out"
 errfile="${TMP_DIR}/${CASE}.err"
 retfile="${TMP_DIR}/${CASE}.retval"
@@ -62,54 +57,30 @@ test -f "${outfile}" && rm "${outfile}"
 test -f "${errfile}" && rm "${errfile}"
 test -f "${retfile}" && rm "${retfile}"
 
+MAKE=`get_make_flavor`
+
 # Run a build for the test case if it seems to need one... (and $MAKE is set)
-MAKE=`check_make_flavor`
+build_dir "$TEST_CASE_DIR" || FATAL "Failed to build the test case!" $?
 
-#!!the generic makefiles can't check *.cpp yet!
-cpp=`find "${TEST_CASE_DIR}" -maxdepth 1 -name '*.cpp' -print -quit`
-if [[ -n "${MAKE}" && -n "${cpp}" ]]; then
-	a=`realpath "${TEST_CASE_DIR}"`
-	b=`realpath "${TEST_DIR}"`
-	#!!shuld be less dumb...:
-	if [[ "$a" != "$b" ]]; then
-		export DIR_OFFSET=../
-	fi
-
-	if [ "${MAKE}" == "nmake" ]; then
-		#!BEWARE: /nologo, instead of -nologo, made Git-sh expand it to /full/path/nologo! :-o
-		mkcmd="nmake -nologo"
-		add_makefile="-f ${_TEST_ENGINE_DIR}/asset/TC-Makefile.nmake"
-	else
-		mkcmd="${MAKE}"
-		add_makefile="-f ${_TEST_ENGINE_DIR}/asset/TC-Makefile.gmake"
-	fi
-	if [[ -e "${TEST_CASE_DIR}/Makefile.${MAKE}" ]]; then
-		mkcmd="${mkcmd} -f Makefile.${MAKE}"
-	elif [[ ! -e "${TEST_CASE_DIR}/Makefile" ]]; then   # <- only add if there's no local Makefile
-		mkcmd="${mkcmd} ${add_makefile}"
-	fi
-
-	dirsave=`pwd`
-	cd "${TEST_CASE_DIR}"
-	${mkcmd}
-	cd "${dirsave}"
-fi
-
-# Finally, run the case...
+#-----------------------------------
+# Finally, run (source) the case...
+#-----------------------------------
 failed=0
+EXPECT=
 case_variant_counter=0
 . "${case_script}"
 
-if [[ "$?" != "0" ]]; then
-	echo "- ERROR: test script failed with unexpected error! Aborting."
+retval=$?; if [[ "$retval" != "0" ]]; then
+	ERROR "Test script failed with unexpected error $retval!"
 	exit 99
 fi
 
 # Find or dyn. regenerate the expfile if defined in a .case script
-if [[ -e         "${TEST_CASE_DIR}/expect" ]]; then
-	 expfile="${TEST_CASE_DIR}/expect"
+if [[ -e         "${TEST_CASE_DIR}/${EXPECT_FILE_NAME}" ]]; then
+	 expfile="${TEST_CASE_DIR}/${EXPECT_FILE_NAME}"
+
 # NOTE:
-# In a mixed "GNU tools on Windows" env (like mine) diff may not be able
+# In a mixed "GNU tools on Windows" env. (like mine) diff may not be able
 # to ignore CR/LF differences, so we need to strip those manually.
 # (-> e.g.: https://github.com/skeeto/w64devkit/issues/45)
 # One easy way is to normalize the newlines in *both* the output
@@ -134,7 +105,7 @@ normalize_crlf "${expfile}"
 normalize_crlf "${outfile}"
 
 #echo diff -b "${outfile}" "${expfile}"
-     diff -b "${outfile}" "${expfile}"
+     diff -b "${expfile}" "${outfile}"
 
 if [[ $? == 0 ]]; then
 	echo "  OK."

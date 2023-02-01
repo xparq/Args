@@ -1,6 +1,6 @@
 RUN args-test.exe -x
 
-EXPECT="\
+EXPECT "\
 -------- NAMED:
 x
 -------- POSITIONAL:

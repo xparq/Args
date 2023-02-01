@@ -1,6 +1,6 @@
 RUN args-test.exe -abc
 
-EXPECT="\
+EXPECT "\
 -------- NAMED:
 a
 b

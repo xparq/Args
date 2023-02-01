@@ -7,4 +7,4 @@ if exist "%PROGRAMFILES%\Git\bin\sh.exe" (
 	rem (No check: it's a last-ditch fallback.)
 )
 
-%_sh_% run_cases %*
+%_sh_% %~pd0run_cases %*

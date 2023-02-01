@@ -1,6 +1,6 @@
 RUN args-test.exe --one 99 2 3 4 -i a b c  -h --long=1
 
-EXPECT="\
+EXPECT "\
 -------- NAMED:
 h
 i = a, b, c

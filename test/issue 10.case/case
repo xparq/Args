@@ -15,6 +15,6 @@ RUN "$exe" --longx
 RUN "$exe" -- long
 
 
-EXPECT="\
+EXPECT "\
 - 'long' was set
 "
