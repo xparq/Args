@@ -6,11 +6,12 @@ EXE=$(CASE).exe
 space=$(subst ,, )
 espace=$(subst ,,\ )
 EXE_NAME_W_SPACES_ESCAPED=$(subst $(space),$(espace),$(EXE))
+# Note: would still fail on any other whitespace, of course...
 
 src=$(EXE_NAME_W_SPACES_ESCAPED:.exe=.cpp)
 deps=$(TEST_DIR)/../Args.hpp $(src)
 
-# Note: would still fail on any other whitespace, of course...
+# (The "real" $(SHELL) is no good on Windows, even if set!)
+GENERIC_BUILD_CMD=$(_SH_) -c ". build.sh \"$(CASE)\""
 $(EXE_NAME_W_SPACES_ESCAPED): $(deps)
-#	"$(TEST_ENGINE_DIR)/build.sh"  $(src)
-	"$(TEST_ENGINE_DIR)/build.sh"  "$@" "$?"
+	$(GENERIC_BUILD_CMD)

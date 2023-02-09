@@ -1,15 +1,15 @@
 #!/bin/sh
+if [ -z "$_TEST_ENGINE_DIR" ]; then
+# Will become a problem if this gets changed to a sourced sub-script:
+#	echo "- ERROR: test env. uninitialized. (Run \"init_once.sh\" before \"$0\"!)";
+#	exit 101;
+# But now we are still a top-level command entry, so we can bootstrap alone:
+	export _TEST_ENGINE_DIR=`dirname "$0"`
+fi
 
-# These must be set before initializing anything else (incl. calling defs.sh):
-#!! Which is pretty stupid, as that one could do this same thing, and then
-#!! the caller could just run this more easily...
-export TEST_DIR=${TEST_DIR:-`pwd`}
-#echo Test dir is: \"$TEST_DIR\"
-_TEST_ENGINE_DIR=`dirname $0`
-export _TEST_ENGINE_DIR=`realpath ${_TEST_ENGINE_DIR}`
+. "$_TEST_ENGINE_DIR/init_per_case.sh" || exit $?
 
-. "$_TEST_ENGINE_DIR/defs.sh"
-retval=$?; if [[ "$retval" != "0" ]]; then exit $retval; fi
+#!!?? How much of the stuff below should actually go to init_per_case?... ;)
 
 case_path=`get_case_path $1` || FATAL "Test case \"$1\" not found!"
 
@@ -26,24 +26,20 @@ export CASE
 	#! -> "SC2155" (https://github.com/koalaman/shellcheck/wiki/SC2155)
 
 echo "---------------------------------------------------------------"
-DEBUG Identified \"$1\" as test case [$CASE] at \"$case_path\"
-echo CASE \"${CASE}\"
+DEBUG "Identified \"$1\" as test case [$CASE] at \"$case_path\""
+echo "CASE \"$CASE\""
 
-if [[ ! -d  "${case_path}" ]]; then
-	case_script="${case_path}"
-	TEST_CASE_DIR=`dirname "${case_path}"`
+if [ ! -d  "$case_path" ]; then
+	case_script="$case_path"
+	TEST_CASE_DIR=`dirname "$case_path"`
 else
-	case_script="${case_path}/${TEST_CASE_SCRIPT_NAME}"
-	TEST_CASE_DIR=${case_path}
+	case_script="$case_path/$TEST_CASE_SCRIPT_NAME"
+	TEST_CASE_DIR=$case_path
 fi
 
-if [[ ! -e "${case_script}" ]]; then
-	FATAL "Test script not found: \"${case_script}\"!"
+if [ ! -e "$case_script" ]; then
+	FATAL "Test script not found: \"$case_script\"!"
 fi
-
-#
-# Run a test case via a .case definition...
-#
 
 # Prep. the tmp work file locations...
 #! Note: preparing the exp. results file requires running the case script
@@ -57,8 +53,6 @@ test -f "${outfile}" && rm "${outfile}"
 test -f "${errfile}" && rm "${errfile}"
 test -f "${retfile}" && rm "${retfile}"
 
-MAKE=`get_make_flavor`
-
 # Run a build for the test case if it seems to need one... (and $MAKE is set)
 build_dir "$TEST_CASE_DIR" || FATAL "Failed to build the test case!" $?
 
@@ -68,16 +62,17 @@ build_dir "$TEST_CASE_DIR" || FATAL "Failed to build the test case!" $?
 failed=0
 EXPECT=
 case_variant_counter=0
-. "${case_script}"
 
-retval=$?; if [[ "$retval" != "0" ]]; then
+. "$case_script"
+
+retval=$?; if [ "$retval" != "0" ]; then
 	ERROR "Test script failed with unexpected error $retval!"
 	exit 99
 fi
 
 # Find or dyn. regenerate the expfile if defined in a .case script
-if [[ -e         "${TEST_CASE_DIR}/${EXPECT_FILE_NAME}" ]]; then
-	 expfile="${TEST_CASE_DIR}/${EXPECT_FILE_NAME}"
+if [ -e     "$TEST_CASE_DIR/$EXPECT_FILE_NAME" ]; then
+    expfile="$TEST_CASE_DIR/$EXPECT_FILE_NAME"
 
 # NOTE:
 # In a mixed "GNU tools on Windows" env. (like mine) diff may not be able
@@ -87,31 +82,45 @@ if [[ -e         "${TEST_CASE_DIR}/${EXPECT_FILE_NAME}" ]]; then
 # and the user-supplied "expect" file -- which means we'd need to
 # "redirect" that too, the same way we do with an EXPECT clause.
 # (Because obviously we won't touch the opriginal file.)
-	kludge_expf="${TMP_DIR}/${CASE}.expected"
+	kludge_expf="$TMP_DIR/${CASE}.expected"
 	# Better do this together with outfile, later below:
 	# tr -d '\015' < ${expfile} > "${kludge_expf}"
-	cp "${expfile}" "${kludge_expf}"
-	expfile=${kludge_expf}
+	cp "$expfile" "$kludge_expf"
+	expfile=$kludge_expf
 else
-	expfile="${TMP_DIR}/${CASE}.expected"
+	expfile="$TMP_DIR/${CASE}.expected"
 	# $EXPECT must be quoted to preserve newlines.
 	# And mind the -n, too:
-	echo -n "${EXPECT}" > "${expfile}"
+	echo -n "$EXPECT" > "$expfile"
 fi
 
 # Normalizing these would prevent precision-testing some whitespace handling, but the
 # CR/LF mismatches is a bigger issue anyway than what we could handle on this level...
-normalize_crlf "${expfile}"
-normalize_crlf "${outfile}"
+normalize_crlf "$expfile"
+normalize_crlf "$outfile"
 
-#echo diff -b "${outfile}" "${expfile}"
-     diff -b "${expfile}" "${outfile}"
+#echo diff -b "$outfile" "$expfile"
+     diff -b "$expfile" "$outfile"
 
-if [[ $? == 0 ]]; then
+if [ $? == 0 ]; then
 	echo "  OK."
 else
 	echo "  !!!!!!!!!!!!!!!!!!!!!!!!! FAILED !!!!!!!!!!!!!!!!!!!!!!!!!"
 	failed=1
 fi
 
-exit ${failed}
+exit $failed
+
+
+#-----------------------------------------------------------------------------
+# LESSONS...:
+
+# NOTE: this "thoughtful precaution" actually made it impossible to ever execute it...:
+#	case_exe="\"./issue 10.exe\""
+# E.g. an earlier comment from run_cmd:
+#	$* didn't work, despite a) apparently proper-looking quoting in the echoed output,
+#	and also b) running the exact same command successfully from the sh command line...
+#	and even c) running it directly from here:
+#	"./issue 10.exe" --long
+# (Neither did any quoting, shift+quoting, backticking, $()ing, whatever... Which is now
+# understandable, in hinsight, but was a nightmare with a dual CMD / sh mindset! :) )

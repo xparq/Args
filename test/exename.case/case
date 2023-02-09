@@ -20,12 +20,14 @@ cut: exename
 # latter keeps the actual cmdline, while MSVC seems to normalize it!
 RUN exename --keep-ext
 RUN exename
-if [[ -n "$VCToolsVersion" ]]; then
+if [ -n "$VCToolsVersion" ] || [ -n "$VCTOOLSVERSION" ]; then
+#	echo MSVC
 	EXPECT "\
 kept: exename.exe
 cut: exename
 "
 else
+#	echo GCC
 	EXPECT "\
 kept: exename
 cut: exename

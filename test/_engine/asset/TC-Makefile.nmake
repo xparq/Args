@@ -14,7 +14,7 @@ src_quoted="$(src)"
 
 deps=$(TEST_DIR_BACKSLASH_FIXUP)/../Args.hpp $(src_quoted)
 
-# Note: would still fail on any other whitespace, of course...
+# (The "real" $(SHELL) is no good on Windows, even if set!)
+GENERIC_BUILD_CMD=$(_SH_) -c ". build.sh \"$(CASE)\""
 $(TARGET_NAME_W_SPACES_QUOTED): $(deps)
-#	@busybox sh $(TEST_DIR_BACKSLASH_FIXUP)\build.sh "$(src)"
-	@busybox sh $(TEST_ENGINE_DIR_BS_FIXUP)\build.sh  $@ $?
+	$(GENERIC_BUILD_CMD)
