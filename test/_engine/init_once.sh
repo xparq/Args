@@ -1,4 +1,4 @@
-export SPACE_TEST_VERSION=0.13
+export SPACE_TEST_VERSION=0.14
 
 #! Don't forget to export everything (non-local), as the per-case runs will be
 #! separate processes! (WHY, BTW??)

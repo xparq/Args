@@ -9,9 +9,22 @@ EXE_NAME_W_SPACES_ESCAPED=$(subst $(space),$(espace),$(EXE))
 # Note: would still fail on any other whitespace, of course...
 
 src=$(EXE_NAME_W_SPACES_ESCAPED:.exe=.cpp)
-deps=$(TEST_DIR)/../Args.hpp $(src)
+
+#!!If no BUILD_DEPS_COMMON then TEST_DIR/ would break, but fortunately
+#!!TEST_DIR/. won't... Ehh... But then again, the test dir would most likely
+#!!be more up-to-date than the TC target, always triggering a build...
+#!!Also...: GNU make is evil enough to include stray leading spaces in the
+#!!*filename* itself, instead of expandingf it onto the dependency line
+#!!itself below, so just adding an empty common dep (separated with a space)
+#!!would ALSO FAIL (unlike in NMAKE)... :-o
+ifeq ($(BUILD_DEPS_COMMON),)
+deps=$(src)
+else
+_BUILD_DEPS_COMMON=$(TEST_DIR)/$(BUILD_DEPS_COMMON)
+deps=$(_BUILD_DEPS_COMMON) $(src)
+endif
 
 # (The "real" $(SHELL) is no good on Windows, even if set!)
 GENERIC_BUILD_CMD=$(_SH_) -c ". build.sh \"$(CASE)\""
 $(EXE_NAME_W_SPACES_ESCAPED): $(deps)
-	$(GENERIC_BUILD_CMD)
+	@$(GENERIC_BUILD_CMD)
