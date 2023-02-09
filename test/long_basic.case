@@ -1,7 +1,6 @@
 RUN args-test.exe --flag --empty= --unknown=param --one spaced
 
-# The order is different, but that is irrelevant!
-#!!The test exe should sort them for us here!
+# The order differs: std::map is sorted!
 EXPECT "\
 -------- NAMED:
 empty
