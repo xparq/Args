@@ -1,5 +1,5 @@
 // Tiny "functional" cmdline processor (-> github.com/xparq/Args)
-// v1.6
+// v1.7
 
 #include <string>
 #include <vector>
@@ -12,6 +12,9 @@ class Args
 {
 protected:
 	typedef std::map<std::string, int> Rules;
+
+	int argc;
+	char** argv;
 	Rules param_count; // entries: { "option_name", number_of_args }
 							// negative count means "at least n", until the next opt or EOS
 							// NOTE: nonexistent items will return 0 (map zero-inits primitive types)
@@ -59,9 +62,6 @@ public:
 	operator const void*() const { return !(*this) ? nullptr : (void*)this; }
 
 protected:
-	int argc;
-	char** argv;
-	int argi = 1; // next arg word to eat (skip argv[0]!)
 	std::string get_next_word() { return std::string(argi < argc ? argv[argi++] : ""); }
 
 	std::map<std::string, std::vector<std::string>> named_params;
@@ -78,7 +78,7 @@ protected:
 			return proc_next(last_opt, --values_to_take);
 		}
 
-		if (a[0] == '-' || a[0] == '/' && a.size() > 1) { // option, or -- or // (note: -/ and /- are options)
+		if ((a[0] == '-' || a[0] == '/') && a.size() > 1) { // option, or -- or // (note: -/ and /- are options)
 			std::string new_opt;
 			if (a[1] == '-' && a.size() > 2) { // likely --long-option, or junk like --$G@%F or ---...
 				new_opt = a.substr(2); // OK, we don't check now... ;)
@@ -132,4 +132,7 @@ protected:
 			return proc_next("", 0);
 		}
 	};
+
+private:
+	int argi = 1; // next arg word to eat (start with argv[1])
 };

@@ -36,6 +36,6 @@ msvc)
 	;;
 gcc*)
 	#!!?? Not quite sure why GCC on e.g. w64devkit survives the botched path autoconv.:
-	g++ -std=c++20 "-I${TEST_DIR}" -o "$exe" "$main_src"
+	g++ -std=c++20 -Wall "-I${TEST_DIR}" -o "$exe" "$main_src"
 	;;
 esac
