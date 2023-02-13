@@ -16,11 +16,11 @@
 		          return 0; }
 
 		if (args["x"])
-			{ cout << "- 'x' was set\n"; }
+			{ cout << "  'x' was set\n"; }
 
 		if (args["long"])
-			{ cout << "- 'long' was set\n"; }
+			{ cout << "  'long' was set\n"; }
 
 		if (args["unknown"])
-			{ cout << "- 'unknown' was set to '" << args("unknown") << "'\n"; }
+			{ cout << "  'unknown' was set to '" << args("unknown") << "'\n"; }
 	}
