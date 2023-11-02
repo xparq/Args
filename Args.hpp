@@ -36,11 +36,11 @@ public:
 	                                                            ? "" : (named().at(argname).size() <= n
 	                                                                   ? "" : named().at(argname)[n]); }
 
-	const std::vector<std::string>&                        positional() const { return unnamed_params; }
+	const std::vector<std::string>& positional() const { return unnamed_params; }
 	//! Note: std::map[key] would want to create a key if not yet there,
 	//! so named()[...] would fail, if const! But constness it is... (for consistency).
 	//! Use the op() and op[] accessors for direct element access!
-	const std::map<std::string, std::vector<std::string>>& named()   const { return named_params; }
+	const std::map<std::string, std::vector<std::string>>& named() const { return named_params; }
 
 	// Remember: this is coming from the command that eventually launched the exe, so it
 	// could be "anything"... E.g. no guarantee that it ends with ".exe" on Windows etc.
@@ -84,8 +84,8 @@ protected:
 				new_opt = a.substr(2); // OK, we don't check now... ;)
 				// Go ahead, extract the =value (only one for now...) now,
 				// because the loop/next won't!
-				if (auto eqpos = new_opt.find_first_of(":=");
-					param_count[new_opt] && eqpos == std::string::npos) {
+				auto eqpos = new_opt.find_first_of(":=");
+				if (param_count[new_opt] && eqpos == std::string::npos) {
 					//error = ParameterMissing;
 					//! Not necessarily... Should `--opt val` be kept supported?
 					//! Simply ignoring this case would just work as before.
