@@ -19,7 +19,7 @@ export TEST_DIR=${TEST_DIR:-`pwd`}
 #DEBUG "Test dir is: \"$TEST_DIR\""
 if [ ! -e "$TEST_DIR" ]; then FATAL "TEST_DIR \"$TEST_DIR\" doesn't seem to exist!" 102; fi
 
-export TMP_DIR="$TEST_DIR/tmp"
+export TMP_DIR="$TEST_DIR/.tmp"
 #!! Fall back to $TMP, $TEMP, /tmp etc...
 if [ ! -d "$TMP_DIR" ]; then
 	mkdir -p  "$TMP_DIR"

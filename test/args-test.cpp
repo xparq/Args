@@ -1,4 +1,23 @@
-﻿#include "Args.hpp"
+﻿/*
+  This file can be #included from test cases, to keep its behavior,
+  but alter the config!
+
+  E.g.:
+	#define FLAGS Args::RepeatAppends,
+	#include "args-test.cpp"
+*/
+
+//---------------------------------------------------------------------------
+// Parameter macros currently supported (name: format):
+
+#ifdef FLAGS // unsigned
+# define FLAGS_COMMA_IF_DEFINED FLAGS,
+#else
+# define FLAGS_COMMA_IF_DEFINED
+#endif
+//---------------------------------------------------------------------------
+
+#include "Args.hpp"
 #include <iostream>
 using namespace std;
 
@@ -13,7 +32,7 @@ auto listvals(auto const& vect)
 
 int main(int argc, char* argv[])
 {
-	Args args(argc, argv, {
+	Args args(argc, argv, FLAGS_COMMA_IF_DEFINED {
 		{"one", 1},     // take 1 param.
 		{"i", -1},      // short; any nr. of params up to the next arg or EOS
 		{"many", -1},   // long;  any nr. of params up to the next arg or EOS

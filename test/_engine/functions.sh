@@ -146,15 +146,16 @@ RUN(){
 	shift
 	args=$@
 
-	# Kludge to prepend ./ if no dir in cmd:
-	normalized_dirpath=`dirname "$cmd"`
-	cmd=$normalized_dirpath/$cmd
-#DEBUG Cmdline to run: "$cmd" $args
-
 	savedir=`pwd`
-	cd "$TEST_CASE_DIR"
-	"$cmd" $args >> "$TMP_DIR/${CASE}.out" 2>> "$TMP_DIR/${CASE}.err"
-	echo $? >> "$TMP_DIR/${CASE}.retval"
+		cd "$TEST_CASE_DIR"
+		if [ -z "$RUN_WITH_PATH_LOOKUP" ]; then
+			# Prepend ./ if no dir in cmd (see also #53):
+			explicit_dirpath=`dirname "$cmd"`
+			cmd=$explicit_dirpath/`basename "$cmd"`
+		fi
+#DEBUG Cmdline to run: "$cmd" $args
+		"$cmd" $args >> "$TMP_DIR/${CASE}.out" 2>> "$TMP_DIR/${CASE}.err"
+		echo $? >> "$TMP_DIR/${CASE}.retval"
 	cd "$savedir"
 }
 

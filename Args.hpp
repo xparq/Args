@@ -1,5 +1,5 @@
 // Tiny "functional" cmdline processor (-> github.com/xparq/Args)
-// v1.7
+// v1.8
 
 #include <string>
 #include <vector>
@@ -10,21 +10,31 @@
 
 class Args
 {
+public:
+	enum {	Defaults,
+		RepeatAppends = 1, // for opts. expecting >1 params; default: override (replace) (GH #16)
+		//!! These two are implicitly forced by the current implementation (can't be disabled):
+		KeepInvalid = 2,   // default: invalid opts. (i.e. those with incorrect # of params) are deleted (GH #44)
+		NonGreedy = 4 };   // undefined options don't try to take params; default: they do (GH #43)
+	unsigned flags = Defaults;
+
+	enum Error { None, ParameterMissing, Unimplemented = -1 }
+	     error = None;
+
 protected:
 	typedef std::map<std::string, int> Rules;
 
 	int argc;
 	char** argv;
-	Rules param_count; // entries: { "option_name", number_of_args }
-							// negative count means "at least n", until the next opt or EOS
-							// NOTE: nonexistent items will return 0 (map zero-inits primitive types)
-public:
-	enum Error { None, ParameterMissing, Unimplemented = -1 }
-	     error = None;
-
+	Rules param_count; // entries: { "option", nr_of_params_for_option }
+	                   // negative n means greedy: "at least n", until the next opt or EOS
+	                   // NOTE: nonexistent entries will return 0 (std::map zero-inits primitive types)
+//!!	const char* split_sep = ",;"; // split("option") will use this by default
 public:
 	Args(int argc_, char** argv_, const Rules& rules = {})
 		: argc(argc_), argv(argv_), param_count(rules) { proc_next("", 0); }
+	Args(int argc_, char** argv_, unsigned flags, const Rules& rules = {})
+		: argc(argc_), argv(argv_), flags(flags), param_count(rules) { proc_next("", 0); }
 	Args(const Args&) = default;
 	Args& operator=(const Args&) = default;
 
@@ -91,6 +101,7 @@ protected:
 					//! Simply ignoring this case would just work as before.
 				} else if (eqpos != std::string::npos) { //! This also allows `--unknown-opt=value` (no matter the rules)!
 					new_opt = new_opt.substr(0, eqpos); // chop off the `=...`
+					if (!(flags & RepeatAppends)) named_params[new_opt].clear(); // Reset in case it's not actually new?...
 					if (a.size() > 2 + eqpos + 1) { // value after the `=`?
 	//std::cerr << "val: " << a.substr(2, eqpos) << "\n";
 						named_params[new_opt].emplace_back(a.substr(2 + eqpos+1)); //! don't crash on `--opt=`
@@ -99,9 +110,9 @@ protected:
 						// the value can just be ignored, and if != 0, then we've just
 						// started taking params anyway, the only thing left is to
 						// make sure to continue that if expecting more:
-						auto tmp = param_count[new_opt];
+						auto pc = param_count[new_opt];
 	//std::cerr << tmp << " params expected for [" << new_opt << "]\n";
-						return proc_next(new_opt, tmp < -1 ? tmp+1 : tmp-1);
+						return proc_next(new_opt, pc < -1 ? pc+1 : pc-1);
 					}
 				}
 			} else if (a[1] != a[0]) { // a real short opt, or short opt. aggregate

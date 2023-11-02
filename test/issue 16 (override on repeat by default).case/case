@@ -1,0 +1,19 @@
+RUN ../args-test --take-two=1 2 junk --take-two=a b
+
+EXPECT "-------- NAMED:
+take-two = a, b
+-------- POSITIONAL:
+junk
+"
+
+#--------------------------------------------------
+# And try appending (Args::RepeatAppends), too...
+#--------------------------------------------------
+alt="$CASE"
+RUN "$alt" --take-two=1 2 junk --take-two=a b
+
+EXPECT "-------- NAMED:
+take-two = 1, 2, a, b
+-------- POSITIONAL:
+junk
+"
