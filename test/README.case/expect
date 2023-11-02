@@ -1,13 +1,20 @@
 Usage: README [-h] [-x] [--long]
 Some args are present.
+  positional arg.: jkh34j5kh32
 Some args are present.
 Usage: README [-h] [-x] [--long]
 Some args are present.
-- 'x' was set
+  'x' was set
 Some args are present.
-- 'long' was set
+  'long' was set
 Some args are present.
-- 'x' was set
-- 'long' was set
+  'x' was set
+  'long' was set
 Some args are present.
-- 'unknown' was set to '77'
+  'long' was set to 77
+Some args are present.
+  'x' was set
+  'long' was set
+  positional arg.: pos1
+  positional arg.: pos2
+  positional arg.: pos3

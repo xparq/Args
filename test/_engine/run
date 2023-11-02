@@ -9,7 +9,7 @@ export _TEST_ENGINE_DIR=`realpath $_selfdir`
 
 _maybe_TEST_DIR=`realpath $_TEST_ENGINE_DIR/..`
 if [ -z "$TEST_DIR" ]; then
-#!! This (anyway arbitrary) check is useless, while we only support TEST_DIR = ENGINE_DIR/..:
+#!!	This (anyway arbitrary) check is useless, while we only support TEST_DIR = ENGINE_DIR/..:
 #	if [ -f "$_maybe_TEST_DIR/run" ] || [ -f "$_maybe_TEST_DIR/run.sh" ] || [ -f "$_maybe_TEST_DIR/run.cmd" ]; then
 		export TEST_DIR=$_maybe_TEST_DIR
 		_reason=" (as detected)"
@@ -143,7 +143,7 @@ report_and_exit(){
 			failed="$cases_failed FAILED"
 		fi
 		if [ $cases_failed != $errors ]; then
-			crashed="$((errors - cases_failed)) CRASHED"
+			crashed="$((errors - cases_failed)) ABORTED"
 			if [ ! -z "$failed" ]; then crashed="${crashed}, "; fi
 		fi
 

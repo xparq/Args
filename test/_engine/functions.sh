@@ -136,7 +136,7 @@ RUN(){
 		case_variant_counter=$(($case_variant_counter + 1))
 		echo "  RUN [$case_variant_counter]: $*" >&2
 	else
-		echo "  RUN: $*" >&2
+		echo "  RUN: $@" >&2
 	fi
 
 	# $* is the whole command to run, as is, but, alas, that won't work
@@ -144,7 +144,7 @@ RUN(){
 	# (Note: if $1 was pre-quoted, that would fail in even more hurtful ways! ;) )
 	cmd=$1
 	shift
-	args=$*
+	args=$@
 
 	# Kludge to prepend ./ if no dir in cmd:
 	normalized_dirpath=`dirname "$cmd"`
@@ -168,14 +168,19 @@ SH(){
 		ERROR 'test case name not set (via CASE=...)!'
 		return 3
 	fi
-	echo "  SHELL: $*"
+	echo "  SHELL: $@"
 
 	# $* is the whole command to run, as is, but, alas, that won't work
 	# if $1 contains spaces, so we need to take care of that here.
 	# (Note: if $1 was pre-quoted, that would fail in even more hurtful ways! ;) )
 	cmd=$1
 	shift
-	args=$*
+	args="$@" #! This is where spaces in quoted args die... :-/
+		  #! Maybe because BB_GLOBBING is off? Had they survived:
+	#! ...we'd need to re-quote them so they could also survive
+	#! the shell invocation command line later below:
+	#for a in $args; do qargs="$qargs \"$a\"" ; done
+	#echo QUOTED ARGS: $qargs
 
 	savecd=`pwd`
 	cd "${TEST_CASE_DIR}"

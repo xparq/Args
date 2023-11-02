@@ -1,24 +1,25 @@
-﻿	#include "Args.hpp"
+	#include "Args.hpp"
 	#include <iostream>
-	using namespace std;
+	using std::cout;
 	int main(int argc, char** argv)
 	{
 		Args args(argc, argv);
 
 		if (args)
-			{ cout << "Some args are present.\n"; }
+			cout << "Some args are present.\n";
 
 		if (!args || args["h"])
-			{ cout << "Usage: " << args.exename() << " "
-		               << "[-h] [-x] [--long]\n";
-		          return 0; }
+			cout << "Usage: " << args.exename() << " "
+		             << "[-h] [-x] [--long]\n";
 
 		if (args["x"])
-			{ cout << "- 'x' was set\n"; }
+			cout << "  'x' was set\n";
 
 		if (args["long"])
-			{ cout << "- 'long' was set\n"; }
+			cout << "  'long' was set"
+			     << (args("long").empty() ? "" : " to " + args("long"))
+			     << '\n';
 
-		if (args["unknown"])
-			{ cout << "- 'unknown' was set to '" << args("unknown") << "'\n"; }
+		for (auto a: args.positional())
+			cout << "  positional arg.: " << a << '\n';
 	}

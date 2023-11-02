@@ -11,7 +11,7 @@ fi
 
 #!!?? How much of the stuff below should actually go to init_per_case?... ;)
 
-case_path=`get_case_path $1` || FATAL "Test case \"$1\" not found!"
+case_path=`get_case_path $1` || FATAL "Test case \"$1\" not found!" 109
 
 #!----------------------------------------------------------------------------
 #! Now we have a path to the test case (or ""!).
@@ -25,7 +25,7 @@ export CASE
 	#! otherwise $? coming from the func. would be reset to 0! :-ooo
 	#! -> "SC2155" (https://github.com/koalaman/shellcheck/wiki/SC2155)
 
-echo "--------------------------------------------------------------- $((cases_run + 1))"
+echo "------------------------------------------------------------------------ $((cases_run + 1))"
 DEBUG "Identified \"$1\" as test case [$CASE] at \"$case_path\""
 echo "CASE \"$CASE\""
 

@@ -1,14 +1,11 @@
-﻿Examples:
+﻿A simple example:
 
 	#include "Args.hpp"
 	#include <iostream>
-	using namespace std;
+	using std::cout;
 	int main(int argc, char** argv)
 	{
-		Args args(argc, argv, {
-			// Custom rules, like:
-			// {"take-two", 2}, // --take-two=1,2 (or --take-two 1 2) would make it an array of [1, 2]
-		});
+		Args args(argc, argv);
 
 		if (args)
 			cout << "Some args are present.\n";
@@ -21,9 +18,9 @@
 			cout << "  'x' was set\n";
 
 		if (args["long"])
-			cout << "  'long' was set";
-			if (!args("long").empty()) cout << " to " + args("long");
-			cout << '\n';
+			cout << "  'long' was set"
+			     << (args("long").empty() ? "" : " to " + args("long"))
+			     << '\n';
 
 		for (auto a: args.positional())
 			cout << "  positional arg.: " << a << '\n';

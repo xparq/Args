@@ -4,6 +4,7 @@ RUN README.exe -h
 RUN README.exe -x
 RUN README.exe --long
 RUN README.exe -x --long
-RUN README.exe --unknown=77
+RUN README.exe --long=77
+RUN README.exe -x pos1 --long pos2 pos3
 
 # CLEAN s/[^ ]+.+\.exe/\.\.\.\.exe/
