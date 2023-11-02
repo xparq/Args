@@ -24,6 +24,4 @@ jobs:
 
     - name: Run the tests...
       shell: cmd
-      run: |
-        cd test
-        run_cases.cmd
+      run: test/run
