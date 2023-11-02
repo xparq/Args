@@ -1,0 +1,7 @@
+RUN args-test.exe --take-two=a,b two
+
+EXPECT "\
+-------- NAMED:
+take-two = a,b, two
+-------- POSITIONAL:
+"

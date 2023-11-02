@@ -1,0 +1,177 @@
+#!/bin/sh
+unset BB_GLOBBING
+#set -x
+
+_selfdir=`dirname $0`
+# Pre-init these, as this is the best chance for it:
+export _TEST_ENGINE_DIR=`realpath $_selfdir`
+#!! This will be invalid when sourced (not exec'ed) by a proxy script (-> #51):
+
+_maybe_TEST_DIR=`realpath $_TEST_ENGINE_DIR/..`
+if [ -z "$TEST_DIR" ]; then
+#!! This (anyway arbitrary) check is useless, while we only support TEST_DIR = ENGINE_DIR/..:
+#	if [ -f "$_maybe_TEST_DIR/run" ] || [ -f "$_maybe_TEST_DIR/run.sh" ] || [ -f "$_maybe_TEST_DIR/run.cmd" ]; then
+		export TEST_DIR=$_maybe_TEST_DIR
+		_reason=" (as detected)"
+#	else
+#		echo "Invalid dir. structure? \"$_maybe_TEST_DIR/run[.sh|.cmd]\" not found!"; exit 126;
+#	fi
+else
+	_reason=" (as specified)"
+fi
+	echo "Using TEST_DIR${_reason}: $TEST_DIR"
+
+
+. $_TEST_ENGINE_DIR/init_once.sh    # <- FATALs could abort the process here.
+
+
+# `export` is critical for $(()), subshelled loops etc.!
+export cases_seen=0
+export cases_run=0
+export cases_failed=0
+export cases_failed_names=
+export errors=0
+export list=
+
+# If we got a pattern (must use '*' on the shell cmdline for that...),
+# use find, otherwise just the input as-is...
+#!!?? Why not just use find all the time? Because it's just too cumbersome
+#!!?? and error-prone with find. But having a pattern makes it
+#!!?? likely that there's not much text in the input, so it's kinda low-risk! :)
+#!! Also: find'ed case names have '.case' appended! :-/
+#!! NOTE: the shell also expands "name*" to "...case", so unquoted raw patterns
+#!! would yield roughly the same results as the one dispatched to find -- however,
+#!! find will do that recursively!
+got_pattern=
+set -o noglob
+case $* in *[\*]* ) got_pattern=1;; esac
+
+#! This would exclude subdirs:
+#!!pat=`echo $1`*${TEST_CASE_FILE_EXT}
+#!! ...but this would include all the junk... so, the case file paths will need to be filtered later!
+#!! ...anyway, subdir filtering can't be done with 'find * -name'
+pat=${1:-*}
+set +o noglob
+
+use_find=
+if [ "$*" == "" ]; then use_find=1; fi
+if [ "$2" == "" -a "$got_pattern" != "" ]; then use_find=1; fi
+if [ "$use_find" != "" ]; then
+
+	# $1 is either a pattern or empty!
+
+	# NOTE: I just wanted to pass
+	#         * names matching some pattern
+	#         * collected,
+	#         * quoted, because of possible spaces etc.,
+	#         * those spaces not triggering word splitting (DESPITE QUOTING!),
+	#         * and the quoted results themselves also separated by spaces
+	#       from `find` to a loop that could iterate over them!... :-o
+	#
+	#       It's been a f'kin nightmare.
+
+	save=`pwd`; cd $TEST_DIR
+
+		# This might be too eager (to go peek into non-TC-looking dirs for a CASE file)
+		# -- OTOH without that this "run ALL" branch would work differently from the
+		# selective runner branch, where any explicitly named dir would be checked
+		# for a CASE file indeed, regardless of its .extension!...:-/
+		# (Oh, and just adding this blatantly would also include each normal test case
+		# dir twice: the dir itself, but then also the CASE file inside, mistakenly!...)
+		#find ... -o -path "*/$TEST_CASE_SCRIPT_NAME"
+
+		#! The shell wrapping is mandatory, otherwise -name would still gets quotes
+		#! from the cmdline... Not sure if that's from windows or BB! :-/
+#set -x
+		list=`sh -c "find ${pat} \( -name '*${TEST_CASE_FILE_EXT}' -not -path '_*' -not -path '\".*' \) \
+			-print"`
+# 2> /dev/null
+		findres=$?
+#set +x
+	cd $save
+
+	if [ "$findres" -ne "0" ]; then
+		echo "- Nothing matched \"$pat\"."
+		exit $findres
+	fi
+	# Alas, find will return 0 when the dir pattern was found, but no file names matched...
+	if [ -z "$list" ]; then
+		echo "- Nothing in \"$pat\" matched \"*${TEST_CASE_FILE_EXT}\"."
+		exit 1
+	fi
+
+
+#	echo -e "--------------- FIND-GENERATED:\n$list"
+else
+	_newline_hack=
+	for c in "$@"; do # <-- just words, may not be valid paths (as opposed to the one with `find`)!
+		case "$c" in
+		#[._]* ) continue;; # Don't filter explicitly named cases after all!...
+		esac
+		list=$list`echo -e "${_newline_hack}$c"`
+		_newline_hack="\n"
+	done
+#	echo -e "--------------- DIRECTLY SPECIFIED:\n$list"
+fi
+#echo "Press Enter to proceed...";read
+
+#=============================================================================
+# Finally, the main loop...
+#=============================================================================
+tc_runner=$_TEST_ENGINE_DIR/run_case
+
+# !! Also...
+# !! The subshell below (due to the redirect) will prevent the var updates
+# !! from propagating back the main level, so an artificial END line is added
+# !! (a'la awk) for all the follow-up (reporting) work /within the loop/! :-o
+# !! Also/2: Trailing newlines seem to get trimmed off the end of the lists!
+# !! (Any `...` subst., for that matter?) Well, OK, I'll just re-add it then...
+# !! Also/3: Must not quote this one at all, it would flatten the list! :-o
+list=$list`echo; echo "_.END"`
+#echo -e "--------------- AMENDED INTERNAL LIST:\n$list"
+#echo Press Enter to proceed...
+#read
+# !! Unbelievable... And I thought CMD was shit, sooo good to escape to sh!...
+
+# !! Oh, and of course this must come before its call, too:
+#--------------------------------------
+report_and_exit(){
+	if [ $errors == 0 ]; then
+		echo "All OK. (Cases run: $cases_run)"
+	else
+		if [ $cases_failed != 0 ]; then
+			failed="$cases_failed FAILED"
+		fi
+		if [ $cases_failed != $errors ]; then
+			crashed="$((errors - cases_failed)) CRASHED"
+			if [ ! -z "$failed" ]; then crashed="${crashed}, "; fi
+		fi
+
+		echo -e "\n  ---++==##<!! ${crashed}${failed} CASE(S) !!>##==**--- (of $cases_run completed, $cases_seen total):"
+		echo -e "$cases_failed_names"
+	fi
+	exit $errors
+}
+#--------------------------------------
+
+# NOTE again: lines may or may not be paths! (see above)
+echo "$list" | while IFS= read -r name; do
+
+	if [ "$name" == "_.END" ]; then report_and_exit; fi
+
+	"$tc_runner" "$name"
+	result=$?
+
+	cases_seen=$((cases_seen + 1))
+	if [ $result == 109 ]; then # The test case didn't even complete!
+		errors=$((errors + 1))
+		continue
+	fi
+	cases_run=$((cases_run + 1))
+
+	if [ ! $result == 0 ]; then
+		cases_failed=$((cases_failed + 1))
+		cases_failed_names=$cases_failed_names`echo -e "\n\t$name"`
+		errors=$((errors + 1))
+	fi
+done

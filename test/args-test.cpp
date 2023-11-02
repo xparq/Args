@@ -14,9 +14,9 @@ auto listvals(auto const& vect)
 int main(int argc, char* argv[])
 {
 	Args args(argc, argv, {
-		{"one", 1}, // take 1 param
-		{"i", -1}, // any number of params up to the next arg or EOS
-		{"many", -1}, // any number of params up to the next arg or EOS
+		{"one", 1},     // take 1 param.
+		{"i", -1},      // short; any nr. of params up to the next arg or EOS
+		{"many", -1},   // long;  any nr. of params up to the next arg or EOS
 		{"take-two", 2},
 	});
 	//auto exename = args.exename();

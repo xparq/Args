@@ -134,9 +134,9 @@ RUN(){
 
 	if [ "${case_variant_counter}" != "" ]; then
 		case_variant_counter=$(($case_variant_counter + 1))
-		echo "  Test [$case_variant_counter]: $*" >&2
+		echo "  RUN [$case_variant_counter]: $*" >&2
 	else
-		echo "  Test: $*" >&2
+		echo "  RUN: $*" >&2
 	fi
 
 	# $* is the whole command to run, as is, but, alas, that won't work
@@ -168,7 +168,7 @@ SH(){
 		ERROR 'test case name not set (via CASE=...)!'
 		return 3
 	fi
-	echo "  Testing: $*"
+	echo "  SHELL: $*"
 
 	# $* is the whole command to run, as is, but, alas, that won't work
 	# if $1 contains spaces, so we need to take care of that here.

@@ -1,0 +1,10 @@
+# Short options are NOT greedy by default; in fact they are nullary (predicates)!
+
+RUN args-test.exe -c cfg
+
+EXPECT "\
+-------- NAMED:
+c
+-------- POSITIONAL:
+cfg
+"

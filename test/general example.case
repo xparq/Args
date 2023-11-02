@@ -1,0 +1,12 @@
+RUN args-test.exe --one 99 2 3 4 -i a b c -h --long=1
+
+EXPECT "\
+-------- NAMED:
+h
+i = a, b, c
+long = 1
+one = 99
+-------- POSITIONAL:
+2, 3, 4
+Usage: [-V] [--moons n]
+"

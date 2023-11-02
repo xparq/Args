@@ -1,2 +1,1 @@
-﻿Don't use the Windows .cmd runner for _explicitly_ running test cases
-with spaces in their names! (Quoting will not help. :-/ )
+﻿* The test exe has some non-default arg. arities defined, don't get fooled! ;)

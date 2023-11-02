@@ -1,8 +1,8 @@
 @echo off
-rem Windows frontend for the real `run_cases` main command script
+rem Windows frontend for the real `run` (the main command script)
 
 rem Here's some questionable heuristics for desperately trying to escape to
-rem a proper shell, based assumptions like folks using this are likely also
+rem a proper shell, based on assumptions like folks using this are likely also
 rem use Git, or bash from WSL, or they may just have a stray BusyBox instance
 rem hanging around on the PATH somewhere...
 rem
@@ -34,7 +34,7 @@ rem    back to less and less compatible options...
 rem NOTE: The `set ...` quoting has to be the way done below to support spaces in
 rem       the paths *AND* commands that are not just a path but also have args.!
 rem !!?? Is there a nicer way for this else-if chain (given that `if` can't run commands)?
-"%~dp0_engine/busybox" --help           2>nul >nul && (set _sh_="%~dp0_engine/busybox" sh)        && goto endif
+"%~dp0busybox" --help           2>nul >nul && (set _sh_="%~dp0busybox" sh)        && goto endif
 rem NOTE: We can't use Git's sh version that's typically on the PATH (...Git/usr/bin/sh.exe)
 rem       as it won't find its fellow POSIX commands! :-o
 "%PROGRAMFILES%\Git\bin\sh" --help      2>nul >nul && (set _sh_="%PROGRAMFILES%\Git\bin\sh")      && goto endif
@@ -55,8 +55,8 @@ rem - PS scripting seems to be disabled by deafult in Windows!
 rem   But... Fortunately (but even more surprisingly), it means nothing: it can be overridden indiscriminately! :D
 rem ! Also: DO NOT run it in our current console window, because it would fuck up the layout!... :-ooo
 rem ! And don't forget /wait to make it synchronous, for checking its result!
-set _BB_IN_SPACE_=%~dp0_engine/busybox.exe
-start /wait /min PowerShell -ExecutionPolicy Bypass -File _engine/download_file.ps1 "https://frippery.org/files/busybox/busybox.exe" "%_BB_IN_SPACE_%"
+set _BB_IN_SPACE_=%~dp0busybox.exe
+start /wait /min PowerShell -ExecutionPolicy Bypass -File %~dp0download_file.ps1 "https://frippery.org/files/busybox/busybox.exe" "%_BB_IN_SPACE_%"
 rem if not errorlevel 1 goto endif
 rem - Perhaps more robust and on the point:
 if not exist "%_BB_IN_SPACE_%" (
@@ -80,9 +80,10 @@ set _sh_="%_BB_IN_SPACE_%" sh
 echo Using a downloaded BusyBox ^("%_BB_IN_SPACE_%"^) for shell...
 
 :ready
+set BB_GLOBBING=0
 echo Riding %_sh_%...
 
 rem NOTE: _sh_ can be more than just a single file path (i.e. a command phrase, like "busybox sh")!
 rem       So it can't be quoted here, because it would then be treated as a filename...
 rem       So, the cmd filename itself ought to have already been quoted (see above, eveywhere...)! :-o
-%_sh_% %~pd0run_cases %*
+%_sh_% %~pd0run %*
