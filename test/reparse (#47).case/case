@@ -1,0 +1,6 @@
+RUN "$CASE"
+EXPECT "\
+survived repeated parsing; newarg: cool
+after reparse(): !args == 0, newarg is still cool
+after reparse(), newarg: dummy, cool
+"

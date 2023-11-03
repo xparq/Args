@@ -1,0 +1,6 @@
+RUN "$CASE" --dummy=1
+EXPECT "\
+initial parse OK, flags: 0
+survived reparsing. newarg: cool
+round 3 survived; !args: 1
+"

@@ -1,5 +1,5 @@
 // Tiny "functional" cmdline processor (-> github.com/xparq/Args)
-// v1.9
+// v1.10
 
 #include <string>
 #include <vector>
@@ -11,7 +11,7 @@
 class Args
 {
 public:
-	enum {	Defaults,
+	enum {	Defaults = 0,
 		RepeatAppends = 1,   // for opts. expecting >1 params; default: override (replace) (GH #16)
 		//!! Not supported yet:
 		//RejectUnknown = 2,   // undefined options are treated as positional args; default: accept (GH #13)
@@ -26,19 +26,33 @@ public:
 protected:
 	typedef std::map<std::string, int> Rules;
 
-	int argc;
-	char** argv;
+	// Mutable to allow resetting for reparsing (e.g. with different flags/rules)
+	mutable int argc = 0;
+	mutable const char* const* argv = nullptr;
+
 	Rules param_count; // entries: { "option", nr_of_params_for_option }
 	                   // negative n means greedy: "at least n", until the next opt or EOS
 	                   // NOTE: nonexistent entries will return 0 (std::map zero-inits primitive types)
 //!!	const char* split_sep = ",;"; // split("option") will use this by default
 public:
-	Args(int argc_, char** argv_, const Rules& rules = {})
-		: argc(argc_), argv(argv_), param_count(rules) { proc_next("", 0); }
-	Args(int argc_, char** argv_, unsigned flags_, const Rules& rules = {})
-		: argc(argc_), argv(argv_), flags(flags_), param_count(rules) { proc_next("", 0); }
+	Args(int argc, const char* const* argv, const Rules& rules = {}) // Use also if need to set rules, but not flags
+		: argc(argc), argv(argv), param_count(rules) { proc_next("", 0); }
+
+	Args(int argc, const char* const* argv, unsigned flags, const Rules& rules = {}) // Use also if need to set flags, but not rules
+		: argc(argc), argv(argv), flags(flags), param_count(rules) { proc_next("", 0); }
+
+	Args() = default;
 	Args(const Args&) = default;
 	Args& operator=(const Args&) = default;
+
+	bool parse(int argc_, const char* const* argv_, unsigned flags_ = Defaults, const Rules& rules_ = {})
+		{ clear(); argc = argc_; argv = argv_; flags = flags_, param_count = rules_;
+		  proc_next("", 0); return error == None; }
+
+	bool reparse(unsigned flags_ = Defaults, const Rules& rules_ = {}) // Uses the original inputs with alt. cfg.
+		{ return parse(argc, argv, flags_, rules_); }
+
+	void clear() { named_params.clear(); unnamed_params.clear(); argi = 1; }
 
 	// Check if opt was set:
 	bool operator[](const std::string& opt) const { return named().find(opt) != named().end(); }
