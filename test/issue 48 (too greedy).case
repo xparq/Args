@@ -1,0 +1,15 @@
+RUN args-test --arg=1 not-a-param!
+EXPECT "\
+-------- NAMED:
+arg = 1
+-------- POSITIONAL:
+not-a-param!
+"
+
+RUN args-test --arg 1 not-a-param!
+EXPECT "\
+-------- NAMED:
+arg
+-------- POSITIONAL:
+1, not-a-param!
+"
