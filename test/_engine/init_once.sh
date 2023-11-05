@@ -47,7 +47,7 @@ test -e "$TEST_DIR/ .cfg" && . "$TEST_DIR/ .cfg"
 # Set some "hard" defaults:
 export TEST_NAME=${TEST_NAME:-test}
 export EXPECT_FILE_NAME=${EXPECT_FILE_NAME:-EXPECT}
-export TEST_CASE_SCRIPT_NAME=${TEST_CASE_SCRIPT_NAME:-CASE}
+export TEST_CASE_SCRIPT_NAME=${TEST_CASE_SCRIPT_NAME:-SCRIPT}
 export TEST_CASE_FILE_EXT=${TEST_CASE_FILE_EXT:-.case}
 
 # "Soft" defaults:

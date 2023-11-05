@@ -1,0 +1,7 @@
+RUN args-test -1
+
+EXPECT "\
+-------- NAMED:
+1
+-------- POSITIONAL:
+"

@@ -3,7 +3,7 @@ FATAL(){
 # The exit code is optional (default: 1).
 # Obviously, only call this from where it's OK to catapult without cleanup!
 	echo
-	echo "ERROR: $1" >&2
+	echo "FATAL ERROR: $1" >&2
 	echo
 	exit ${2:-1}
 }
@@ -13,8 +13,15 @@ ERROR(){
 WARNING(){
 	echo "- WARNING: $*" >&2
 }
+NOTE(){
+	echo "- NOTE: $*" >&2
+}
 DEBUG(){
-	test -n "$SPACE_DEBUG" && echo "....DBG: $*" >&2
+	test -n "$SPACE_DEBUG" && echo -e "....DBG: $*" >&2
+}
+
+CREATE_EMPTY(){
+	if [ ! -z "$1" ]; then echo -n "" > "$1"; fi
 }
 
 #-----------------------------------------------------------------------------
@@ -58,7 +65,8 @@ get_case_path(){
 
 #-----------------------------------------------------------------------------
 get_case_name(){
-	#!!Shouldn't it have escaped \"...\" as those realpaths above?!
+	#! Quotes are not needed for the suffix (unlike the \"...\" for realpath above);
+	#! I think they would interfere with the globbing (I forgot)...
 	name=`basename "${*%$TEST_CASE_FILE_EXT}"`
 	echo $name
 }
@@ -127,7 +135,10 @@ abspath_fixup(){
 
 #-----------------------------------------------------------------------------
 RUN(){
-	if [ -z "$CASE" ]; then
+#	if [ ! -z "$ABORTED" ] && [ "$ABORTED" != "$_TENTATIVE_ABORT_" ]; then return $ABORTED; fi
+	if [ ! -z "$ABORTED" ]; then return $ABORTED; fi
+
+	if [ -z "$CASE" ]; then # assert
 		ERROR 'test case name not set (via CASE=...)!'
 		return 3
 	fi
@@ -142,25 +153,54 @@ RUN(){
 	# $* is the whole command to run, as is, but, alas, that won't work
 	# if $1 contains spaces, so we need to take care of that here.
 	# (Note: if $1 was pre-quoted, that would fail in even more hurtful ways! ;) )
+#!!... I think there's no good way to solve this in sh.
 	cmd=$1
 	shift
 	args=$@
-
-	savedir=`pwd`
-		cd "$TEST_CASE_DIR"
+#!! Not even desperate attempts like this can help: it would just push the
+#!! explicit quotes right down the throat of the recipient ($cmd)... :-/
+#	requoted=
+#	while [ -n "$1" ]
+#	do
+#		requoted="$requoted\"$1\" "
+#			# This will also leave a trailing space, but that's the least of our problems...
+#		shift
+#	done
+#	args=$requoted
+#echo "args = $args"
 		if [ -z "$RUN_WITH_PATH_LOOKUP" ]; then
 			# Prepend ./ if no dir in cmd (see also #53):
 			explicit_dirpath=`dirname "$cmd"`
 			cmd=$explicit_dirpath/`basename "$cmd"`
 		fi
-#DEBUG Cmdline to run: "$cmd" $args
-		"$cmd" $args >> "$TMP_DIR/${CASE}.out" 2>> "$TMP_DIR/${CASE}.err"
-		echo $? >> "$TMP_DIR/${CASE}.retval"
-	cd "$savedir"
+DEBUG Cmdline to run: "$cmd" $args
+		echo "\"$cmd\" $args"    > "$cmdfile"
+# This has been the only way to get at least \"arg with space\" work on Windows + Git Bash:
+		sh "$cmdfile" >> "$outfile" 2>> "$errfile"
+			# Alas, sh -e would be too hamfisted, and would probably prevent testing !0 exit codes...
+#		"$cmd" $args >> "$outfile" 2>> "$errfile"
+		ret=$?
+#		echo $ret >> "$retfile"
+
+	# Can't do this in run_test, as that only sees the overall results,
+	# not the individual test steps internal to the test case!
+	case "$EXPECT_ERROR" in
+	ignore)	;;
+	warn)	test $ret -ne 0 && NOTE "Command returned nonzero exit code!" ;;
+	0)	if [ $ret != 0 ]; then FAIL; fi ;;
+	[0-9]*)	if [ $ret != $EXPECT_ERROR ]; then NOTE "INCORRECT EXIT CODE: $ret"; FAIL $ret; fi ;;
+	*)	if [ -z "$EXPECT_ERROR" ] && [ $ret == 0 ]; then FAIL; fi ;;
+	esac
+
+#	if [ "$ABORTED" == "$_TENTATIVE_ABORT_" ]; then ABORTED=; fi
+	return $ret
 }
 
 #-----------------------------------------------------------------------------
 SH(){
+#	if [ ! -z "$ABORTED" ] && [ "$ABORTED" != "$_TENTATIVE_ABORT_" ]; then return $ABORTED; fi
+	if [ ! -z "$ABORTED" ]; then return $ABORTED; fi
+
 #!!	run sh -c \"$*\"
 #!!	run sh -c "$*"
 #!!	- didn't work, maybe due to quoting problems?!
@@ -171,24 +211,33 @@ SH(){
 	fi
 	echo "  SHELL: $@"
 
-	# $* is the whole command to run, as is, but, alas, that won't work
-	# if $1 contains spaces, so we need to take care of that here.
-	# (Note: if $1 was pre-quoted, that would fail in even more hurtful ways! ;) )
 	cmd=$1
 	shift
-	args="$@" #! This is where spaces in quoted args die... :-/
-		  #! Maybe because BB_GLOBBING is off? Had they survived:
+	args=$@ #! This is where spaces in quoted args die... :-/
+	        #! Maybe because BB_GLOBBING is off? Had they survived:
 	#! ...we'd need to re-quote them so they could also survive
 	#! the shell invocation command line later below:
 	#for a in $args; do qargs="$qargs \"$a\"" ; done
 	#echo QUOTED ARGS: $qargs
+	#!!Alas, that probably wouldn't help either, after all... See at RUN()!
 
-	savecd=`pwd`
-	cd "${TEST_CASE_DIR}"
-	echo "sh -c \"$cmd $args\"" >> "${TMP_DIR}/${CASE}.cmd"
-	sh -c "$cmd $args" >> "${TMP_DIR}/${CASE}.out" 2>> "${TMP_DIR}/${CASE}.err"
-	echo $? >> "${TMP_DIR}/${CASE}.retval"
-	cd "${savecd}"
+		echo "sh -c \"$cmd $args\"" > "$cmdfile"
+		sh -c "$cmd $args" >> "$outfile" 2>> "$errfile"
+		ret=$?
+#		echo $ret >> "$retfile"
+
+	# Can't do this in run_test, as that only sees the overall results,
+	# not the individual test steps internal to the test case!
+	case "$EXPECT_ERROR" in
+	ignore)	;;
+	warn)	test $ret -ne 0 && NOTE "Command returned nonzero exit code!" ;;
+	0)	if [ $ret != 0 ]; then FAIL; fi ;;
+	[0-9]*)	if [ $ret != $EXPECT_ERROR ]; then NOTE "INCORRECT EXIT CODE: $ret"; FAIL $ret; fi ;;
+	*)	if [ -z "$EXPECT_ERROR" ] && [ $ret == 0 ]; then FAIL; fi ;;
+	esac
+
+#	if [ "$ABORTED" == "$_TENTATIVE_ABORT_" ]; then ABORTED=; fi
+	return $ret
 }
 
 #-----------------------------------------------------------------------------
@@ -196,9 +245,45 @@ EXPECT(){
 	# Reset by the test case runner (run_case)!
 	EXPECT=${EXPECT}$*
 }
-
 EXCEPT(){
-	ERROR "Well, well... Been there, done that! ;)"
+	FATAL "Well, well... Been there, done that! ;)"
+}
+
+
+#-----------------------------------------------------------------------------
+# `EXPECT_ERROR`   - the command is expected to fail
+# `EXPECT_ERROR x` - the command is expected to fail with error code x
+# `EXPECT_ERROR 0` - no error is expected, the command must succeed
+# `EXPECT_ERROR warn` - note if a cmd. fails, but do not fail the case
+# `EXPECT_ERROR ignore` - disable checking (default)
+#
+# It must come before the RUN/SH (exec) statement(s) it belongs to!
+# Each further exec statement in the test case will be affected, so adjust
+# or reset accordingly, as needed (e.g. `EXPECT_ERROR ignore`).
+#
+EXPECT_ERROR(){
+	# Reset by the test case runner (run_case)!
+	EXPECT_ERROR=$1
+#	echo $1 > $retexpfile
+}
+
+FAIL(){
+	FORCED_RESULT=${1:-1}
+}
+
+PASS(){
+	FORCED_RESULT=0
+}
+
+
+# Can't really abort this way directly (without also terminating the whole
+# runner script); the second best is trying to propagate a magic ABORT code...
+#export _TENTATIVE_ABORT_=108
+export _ABORT_=109
+ABORT(){
+	ABORTED=$_ABORT_
+	# Legacy fallback trigger, for some extra chances of doom...:
+	FORCED_RESULT=$_ABORT_
 }
 
 normalize_crlf(){
@@ -278,6 +363,9 @@ build_dir(){
 	#! The makefiles themselves can't easily examine wildcard sources, so:
 	#!!FAILED using -name 'a b' (instead of "a b") with BB's find! :-o
 	cpp=`find "$build_dir" -maxdepth 1 -name "$CASE.cpp" -print -quit`
+		# NOTE: This is (as all other such commands) case-sensitive,
+		# while the actual file names aren't on Windows (NTFS), so
+		# sloppiness would lead to errors like #74!...
 	if [ -z "$cpp" ]; then
 DEBUG "Build: No sources found -> nothing to do."
 			return 0

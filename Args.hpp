@@ -63,10 +63,11 @@ public:
 	                                                                   ? "" : named().at(argname)[n]); }
 
 	const std::vector<std::string>& positional() const { return unnamed_params; }
-	//! Note: std::map[key] would want to create a key if not yet there,
-	//! so named()[...] would fail, if const! But constness it is... (for consistency).
-	//! Use the op() and op[] accessors for direct element access!
+	      std::vector<std::string>& positional()       { return unnamed_params; }
 	const std::map<std::string, std::vector<std::string>>& named() const { return named_params; }
+	      std::map<std::string, std::vector<std::string>>& named()       { return named_params; }
+		// Pedantry: if you want to prevent casual named()[...] calls to add missing keys
+		// (std::map does that), use a const copy of the Args obj with op() and op[].
 
 	// Remember: this is coming from the command that eventually launched the exe, so it
 	// could be "anything"... E.g. no guarantee that it ends with ".exe" on Windows etc.
@@ -108,8 +109,7 @@ protected:
 			std::string new_opt;
 			if (a[1] == '-' && a.size() > 2) { // likely --long-option, or junk like --$G@%F or ---...
 				new_opt = a.substr(2); // OK, we don't check now... ;)
-				// Extract the =value right now (up to the next space; no quoting support yet),
-				// because the next loop cycle can't (even see it)!
+				// Extract the =value right now, because the next loop cycle can't (even see it)!
 				auto eqpos = new_opt.find_first_of(":=");
 				if (eqpos == std::string::npos) {
 					values_to_take = param_count[new_opt];

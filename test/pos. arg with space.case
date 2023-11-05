@@ -1,0 +1,9 @@
+#!!OMFG, those "meta" quotes!... :-o Sigh... :-/ Sorry! :(
+RUN ./args-test --crap \"one two three\"
+
+EXPECT "\
+-------- NAMED:
+crap
+-------- POSITIONAL:
+one two three
+"

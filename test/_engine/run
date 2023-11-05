@@ -100,8 +100,9 @@ if [ "$use_find" != "" ]; then
 		exit 1
 	fi
 
-
 #	echo -e "--------------- FIND-GENERATED:\n$list"
+	DEBUG "--------------- FIND-GENERATED:\n$list"
+
 else
 	_newline_hack=
 	for c in "$@"; do # <-- just words, may not be valid paths (as opposed to the one with `find`)!
@@ -112,15 +113,15 @@ else
 		_newline_hack="\n"
 	done
 #	echo -e "--------------- DIRECTLY SPECIFIED:\n$list"
+	DEBUG "--------------- DIRECTLY SPECIFIED:\n$list"
 fi
 #echo "Press Enter to proceed...";read
 
 #=============================================================================
 # Finally, the main loop...
 #=============================================================================
-tc_runner=$_TEST_ENGINE_DIR/run_case
 
-# !! Also...
+# !! BEWARE!...
 # !! The subshell below (due to the redirect) will prevent the var updates
 # !! from propagating back the main level, so an artificial END line is added
 # !! (a'la awk) for all the follow-up (reporting) work /within the loop/! :-o
@@ -147,23 +148,29 @@ report_and_exit(){
 			if [ ! -z "$failed" ]; then crashed="${crashed}, "; fi
 		fi
 
-		echo -e "\n  ---++==##<!! ${crashed}${failed} CASE(S) !!>##==**--- (of $cases_run completed, $cases_seen total):"
+		echo -e "\n  ---===##<!! ${crashed}${failed} CASE(S) !!>##===--- (of $cases_run completed, $cases_seen total):"
 		echo -e "$cases_failed_names"
 	fi
 	exit $errors
 }
 #--------------------------------------
 
+tc_runner=$_TEST_ENGINE_DIR/run_case
+
 # NOTE again: lines may or may not be paths! (see above)
 echo "$list" | while IFS= read -r name; do
 
 	if [ "$name" == "_.END" ]; then report_and_exit; fi
 
-	"$tc_runner" "$name"
+	export _TC_CRASHFILE="$TMP_DIR/`basename \"$name\"`.CRASH" # Should be created/deleted by the TC wrapper script
+
+		"$tc_runner" "$name"
+
 	result=$?
 
 	cases_seen=$((cases_seen + 1))
-	if [ $result == 109 ]; then # The test case didn't even complete!
+#	if [ -e "$_TC_CRASHFILE" ] || [ $result == $_ABORT_ ] || [ $result == $_TENTATIVE_ABORT_ ]; then # The test case didn't even complete!
+	if [ -e "$_TC_CRASHFILE" ] || [ $result == $_ABORT_ ]; then # The test case didn't even complete!
 		errors=$((errors + 1))
 		continue
 	fi
