@@ -120,7 +120,7 @@ fi
 #-----------------------------------
 # Run a build for the test case if it needs one... (and $MAKE is set)
 #-----------------------------------
-build_dir "$TEST_CASE_DIR" || FATAL "Failed to build the test case!" $?
+build_dir "$TEST_CASE_DIR" || FATAL "Failed to build the test case!" $_ABORT_
 
 #-----------------------------------
 # Finally, run (source) the case...

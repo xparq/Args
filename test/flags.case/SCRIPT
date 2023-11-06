@@ -1,0 +1,25 @@
+# The --falgs arg is used to override the default Args.flags, for reparsing
+
+# Defaults = 0,
+# RepeatAppends = 1,   // for opts. expecting >1 params; default: override (replace) (GH #16)
+# RejectUnknown = 2,   // undefined options are treated as positional args; default: accept (GH #13)
+# KeepInvalid   = 4,   // default: delete them (i.e. those with incorrect # of params) (GH #44)
+# NonGreedy     = 8 }; // undefined options don't try to take params; default: they do (GH #43)
+
+# Defaults
+RUN "$CASE" --arg=1 --arg=2
+EXPECT "using flags: 0 (hex: x0)
+-------- NAMED (1):
+arg = 2
+-------- POSITIONAL (0):
+"
+
+# RepeatAppends
+RUN "$CASE" --arg=1 2 junk --arg=a b --flags=1
+EXPECT "using flags: 1 (hex: x1)
+-------- NAMED (2):
+arg = 1, a
+flags = 1
+-------- POSITIONAL (3):
+2, junk, b
+"

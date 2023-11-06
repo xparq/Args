@@ -12,7 +12,7 @@
 
 		if (!args || args["h"])
 			cout << "Usage: " << args.exename() << " "
-		             << "[-h] [-x] [--long]\n";
+		             << "[-h] [-x] [--long] [whatever...]\n";
 
 		if (args["x"])
 			cout << "  'x' was set\n";

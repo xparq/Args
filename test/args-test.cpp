@@ -22,13 +22,13 @@
 using namespace std;
 
 
-auto listvals(auto const& vect)
+auto listvals(auto const& container, const char* tail = "\n", const char* sep = ", ")
 {
-	for (auto v = vect.begin(); v != vect.end(); ++v)
-		cout << (v == vect.begin() ? "":", ")
+	for (auto v = container.begin(); v != container.end(); ++v)
+		cout << (v == container.begin() ? "":sep)
 		     << *v
-		     << (v+1 == vect.end() ? "\n":"");
-};
+		     << (v+1 == container.end() ? tail:"");
+}
 
 int main(int argc, char* argv[])
 {

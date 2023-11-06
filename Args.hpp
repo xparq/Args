@@ -1,12 +1,14 @@
-// Tiny "functional" cmdline processor (-> github.com/xparq/Args)
-// v1.10
+// Tiny cmdline processor (-> github.com/xparq/Args)
+// v1.12
+
+#ifndef _ARGS_HPP_
 
 #include <string>
 #include <vector>
 #include <map>
 #include <cstddef> // size_t
 #include <cassert>
-//#include <iostream> // cerr (for debugging)
+//#include <iostream> // cerr, for debugging
 
 class Args
 {
@@ -18,10 +20,9 @@ public:
 		//!! These are implicitly enforced by the current implementation (can't be disabled):
 		KeepInvalid   = 4,   // default: delete them (i.e. those with incorrect # of params) (GH #44)
 		NonGreedy     = 8 }; // undefined options don't try to take params; default: they do (GH #43)
-	unsigned flags = Defaults;
+	unsigned flags = Defaults;   // (not the enum, to avoid some annoying restrictions)
 
-	enum Error { None, ParameterMissing, Unimplemented = -1 }
-	     error = None;
+	enum Error { None, ParameterMissing, Unimplemented = -1 } error = None;
 
 protected:
 	typedef std::map<std::string, int> Rules;
@@ -35,11 +36,11 @@ protected:
 	                   // NOTE: nonexistent entries will return 0 (std::map zero-inits primitive types)
 //!!	const char* split_sep = ",;"; // split("option") will use this by default
 public:
-	Args(int argc, const char* const* argv, const Rules& rules = {}) // Use also if need to set rules, but not flags
+	Args(int argc, const char* const* argv, const Rules& rules = {}) // ...also if you need to set rules, but not flags
 		: argc(argc), argv(argv), param_count(rules) { proc_next("", 0); }
 
-	Args(int argc, const char* const* argv, unsigned flags, const Rules& rules = {}) // Use also if need to set flags, but not rules
-		: argc(argc), argv(argv), flags(flags), param_count(rules) { proc_next("", 0); }
+	Args(int argc, const char* const* argv, unsigned flags, const Rules& rules = {}) // ...also if you need to set flags, but not rules
+		: flags(flags), argc(argc), argv(argv), param_count(rules) { proc_next("", 0); }
 
 	Args() = default;
 	Args(const Args&) = default;
@@ -49,10 +50,10 @@ public:
 		{ clear(); argc = argc_; argv = argv_; flags = flags_, param_count = rules_;
 		  proc_next("", 0); return error == None; }
 
-	bool reparse(unsigned flags_ = Defaults, const Rules& rules_ = {}) // Uses the original inputs with alt. cfg.
+	bool reparse(unsigned flags_ = Defaults, const Rules& rules_ = {}) // uses the original inputs (which can also be altered)
 		{ return parse(argc, argv, flags_, rules_); }
 
-	void clear() { named_params.clear(); unnamed_params.clear(); argi = 1; }
+	void clear() { named_args.clear(); positional_args.clear(); argi = 1; }
 
 	// Check if opt was set:
 	bool operator[](const std::string& opt) const { return named().find(opt) != named().end(); }
@@ -62,10 +63,10 @@ public:
 	                                                            ? "" : (named().at(argname).size() <= n
 	                                                                   ? "" : named().at(argname)[n]); }
 
-	const std::vector<std::string>& positional() const { return unnamed_params; }
-	      std::vector<std::string>& positional()       { return unnamed_params; }
-	const std::map<std::string, std::vector<std::string>>& named() const { return named_params; }
-	      std::map<std::string, std::vector<std::string>>& named()       { return named_params; }
+	const std::vector<std::string>& positional() const { return positional_args; }
+	      std::vector<std::string>& positional()       { return positional_args; }
+	const std::map<std::string, std::vector<std::string>>& named() const { return named_args; }
+	      std::map<std::string, std::vector<std::string>>& named()       { return named_args; }
 		// Pedantry: if you want to prevent casual named()[...] calls to add missing keys
 		// (std::map does that), use a const copy of the Args obj with op() and op[].
 
@@ -91,8 +92,8 @@ public:
 protected:
 	std::string get_next_word() { return std::string(argi < argc ? argv[argi++] : ""); }
 
-	std::map<std::string, std::vector<std::string>> named_params;
-	std::vector<std::string> unnamed_params;
+	std::map<std::string, std::vector<std::string>> named_args;
+	std::vector<std::string> positional_args;
 
 	void proc_next(const std::string& last_opt, int values_to_take) {
 		std::string a = get_next_word();
@@ -101,7 +102,7 @@ protected:
 		if (values_to_take > 0) {
 	//std::cerr << "- eating '"<< a <<"' as param. val. for " << last_opt << "\n";
 			assert(!last_opt.empty());
-			named_params[last_opt].emplace_back(a);
+			named_args[last_opt].emplace_back(a);
 			return proc_next(last_opt, --values_to_take);
 		}
 
@@ -115,10 +116,10 @@ protected:
 					values_to_take = param_count[new_opt];
 				} else { //! This also allows `--unknown-opt=value` (no matter the rules)!
 					new_opt = new_opt.substr(0, eqpos); // chop off the `=...`
-					if (!(flags & RepeatAppends)) named_params[new_opt].clear(); // Reset in case it's not actually new?...
+					if (!(flags & RepeatAppends)) named_args[new_opt].clear(); // Reset in case it's not actually new?...
 					if (a.size() > 2 + eqpos + 1) { // value after the `=`?
 	//std::cerr << "val: " << a.substr(2, eqpos) << "\n";
-						named_params[new_opt].emplace_back(a.substr(2 + eqpos+1)); //! don't crash on `--opt=`
+						named_args[new_opt].emplace_back(a.substr(2 + eqpos+1)); //! don't crash on `--opt=`
 						auto pc = param_count[new_opt];
 						// We have taken the offered value regardless of the rules,
 						// but if there's indeed a rule, we're good, 'coz if = 0, then
@@ -149,17 +150,17 @@ protected:
 			}
 			// Add the option with an empty param list to start with:
 	//std::cerr << "ready to take next arg as param, if expects any.\n";
-			named_params[new_opt];
+			named_args[new_opt];
 			return proc_next(new_opt, param_count[new_opt]);
 		}
 
 	process_unnamed:
-	//std::cerr << "- adding unnamed param\n";
+	//std::cerr << "- adding unnamed arg (or eating it as param): "<< a <<"\n";
 		if (values_to_take < 0) {
-			named_params[last_opt].emplace_back(a);
+			named_args[last_opt].emplace_back(a);
 			return proc_next(last_opt, values_to_take);
 		} else {
-			unnamed_params.push_back(a);
+			positional_args.push_back(a);
 			return proc_next("", 0);
 		}
 	};
@@ -167,3 +168,6 @@ protected:
 private:
 	int argi = 1; // next arg word to eat (start with argv[1])
 };
+
+#define _ARGS_HPP_
+#endif
