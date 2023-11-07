@@ -10,8 +10,8 @@ FEATURES
       - [ ] but that can be disabled
 - [x] Both short and long options: -x --long
       - [x] Long options only as --long (so //whaaat is always positional)
-- [ ] A bare -- turns off named args. for the rest of the cmdline by default, but it
-      - [ ] can be configured to be a regular positional arg. (*for now it always is!*)
+- [x] A bare -- turns off named args. for the rest of the cmdline by default, but it
+      - [x] can be configured to be a regular positional arg. (*for now it always is!*)
 - [x] Options are predicates by default, with simple bool checks: args["x"], args["long"]
 - [x] Long options can take values without config.: --name=val
 - [x] Any option can take values if configured so: -a file --except *pattern

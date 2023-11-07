@@ -1,0 +1,42 @@
+RUN args-test -1 -- -2
+EXPECT "\
+-------- NAMED (1):
+1
+-------- POSITIONAL (1):
+-2
+"
+
+RUN args-test -- -- --file
+EXPECT "\
+-------- NAMED (0):
+-------- POSITIONAL (2):
+--, --file
+"
+
+RUN args-test // //still-positional
+EXPECT "\
+-------- NAMED (0):
+-------- POSITIONAL (2):
+//, //still-positional
+"
+
+####################################
+# DashDashIsPositional (flags = 16)
+####################################
+RUN args-test --flags=16 -1 -- -2
+EXPECT "\
+-------- NAMED (3):
+1
+2
+flags = 16
+-------- POSITIONAL (1):
+--
+"
+
+RUN args-test --flags=16 -- --
+EXPECT "\
+-------- NAMED (1):
+flags = 16
+-------- POSITIONAL (2):
+--, --
+"

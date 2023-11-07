@@ -1,0 +1,36 @@
+SH echo Override with empty form...
+	RUN args-test --thing=1 --thing
+EXPECT "Override with empty form...
+-------- NAMED (1):
+thing
+-------- POSITIONAL (0):
+"
+
+# These all fail (note: the test app has --greedy and -G as "greedy", but that doesn't matter here):
+
+    SH echo Override with empty, long greedy
+    RUN args-test --greedy 1 2 3 --greedy
+    EXPECT "Override with empty, long
+-------- NAMED (1):
+greedy
+-------- POSITIONAL (0):
+"
+    
+# Should also verify this then:
+
+    SH echo Override with empty, short greedy
+    RUN args-test --G 1 2 3 -G
+    EXPECT "Override with empty, long
+-------- NAMED (1):
+G
+-------- POSITIONAL (0):
+"
+
+    SH echo Override with empty, short
+    RUN args-test -2 a b c -2
+    EXPECT "Override with empty, long
+-------- NAMED (1):
+2
+-------- POSITIONAL (1):
+c
+"
