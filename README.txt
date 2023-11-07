@@ -23,7 +23,7 @@ FEATURES
 - [x] Options (short or long) can also have multiple parameters --multi a b c
       - [x] query like: args("multi", 2) -> "c",
       - [x] or get them all with args.named("multi") -> std::vector{"a", "b", "c"}
-- [x] Multi-parameter args. can be "greedy" to take each value up to the next opt.,
+- [?] Multi-parameter args. can be "greedy" to take each value up to the next opt.,
       - [x] or only a fixed n. of values
 - [x] Repeated options override earlier ones by default
 - [ ] Repeated options can also be set to
@@ -35,7 +35,8 @@ FEATURES
 - [x] Reparsing with different config: reparse(flags = Defaults, rules = {})
       - [x] The instance can be reused for completely new parses, too:
             parse(new_argc, new_argv, flags = Defaults, rules = {})
-      - [x] The last used argc/argv are always available as args.argc, args.argv
+      - [x] The last used argc/argv are available as args.argc, args.argv
+            (in case they're needed outside of main(), e.g. via myApp.args)
 - [x] exename(): argv[0], but stripping the path and
       - [x] the extension (".exe" by default, but -> exename(false, ".mysuffix"),
       - [x] unless its "true value" :) is requested with exename(true)

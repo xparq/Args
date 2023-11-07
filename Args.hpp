@@ -1,6 +1,3 @@
-// Tiny cmdline processor (-> github.com/xparq/Args)
-// v1.12
-
 #ifndef _ARGS_HPP_
 
 #include <string>
@@ -10,31 +7,29 @@
 #include <cassert>
 //#include <iostream> // cerr, for debugging
 
-class Args
+class Args // Tiny cmdline processor 1.13 (-> github.com/xparq/Args)
 {
 public:
 	enum {	Defaults = 0,
 		RepeatAppends = 1,   // for opts. expecting >1 params; default: override (replace) (GH #16)
-		//!! Not supported yet:
-		//RejectUnknown = 2,   // undefined options are treated as positional args; default: accept (GH #13)
-		//!! These are implicitly enforced by the current implementation (can't be disabled):
+		//!! Not yet: RejectUnknown = 2,   // undefined options are treated as positional args; default: accept (GH #13)
+		//!! These are enforced by the current implementation (i.e. can't be disabled):
 		KeepInvalid   = 4,   // default: delete them (i.e. those with incorrect # of params) (GH #44)
 		NonGreedy     = 8 }; // undefined options don't try to take params; default: they do (GH #43)
 	unsigned flags = Defaults;   // (not the enum, to avoid some annoying restrictions)
 
 	enum Error { None, ParameterMissing, Unimplemented = -1 } error = None;
 
-protected:
-	typedef std::map<std::string, int> Rules;
-
-	// Mutable to allow resetting for reparsing (e.g. with different flags/rules)
+	// 'mutable' to emphasize they can be reset for reparsing (also with different flags/rules)
 	mutable int argc = 0;
 	mutable const char* const* argv = nullptr;
+
+protected:
+	typedef std::map<std::string, int> Rules;
 
 	Rules param_count; // entries: { "option", nr_of_params_for_option }
 	                   // negative n means greedy: "at least n", until the next opt or EOS
 	                   // NOTE: nonexistent entries will return 0 (std::map zero-inits primitive types)
-//!!	const char* split_sep = ",;"; // split("option") will use this by default
 public:
 	Args(int argc, const char* const* argv, const Rules& rules = {}) // ...also if you need to set rules, but not flags
 		: argc(argc), argv(argv), param_count(rules) { proc_next("", 0); }
@@ -132,8 +127,6 @@ protected:
 				}
 
 				//!! CHECK ERRORS!
-				//!! ...
-				//!! Should `--opt val` be kept supported?
 				//!! ... error = ParameterMissing;
 
 			} else if (a[1] != a[0]) { // a real short opt, or short opt. aggregate
