@@ -1,8 +1,8 @@
-Usage: README [-h] [-x] [--long]
+Usage: README-example [-h] [-x] [--long]
 Some args are present.
   positional arg.: jkh34j5kh32
 Some args are present.
-Usage: README [-h] [-x] [--long]
+Usage: README-example [-h] [-x] [--long]
 Some args are present.
   'x' was set
 Some args are present.

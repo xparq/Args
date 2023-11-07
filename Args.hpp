@@ -20,9 +20,8 @@ public:
 
 	enum Error { None, ParameterMissing, Unimplemented = -1 } error = None;
 
-	// 'mutable' to emphasize they can be reset for reparsing (also with different flags/rules)
-	mutable int argc = 0;
-	mutable const char* const* argv = nullptr;
+	mutable int argc = 0; // 'mutable' to emphasize that these can be replaced for reparsing
+	mutable char const* const* argv = nullptr; // "C++ MADE ME DO IT" ;) Being less uptight caused problems in corner cases
 
 protected:
 	typedef std::map<std::string, int> Rules;
@@ -31,10 +30,10 @@ protected:
 	                   // negative n means greedy: "at least n", until the next opt or EOS
 	                   // NOTE: nonexistent entries will return 0 (std::map zero-inits primitive types)
 public:
-	Args(int argc, const char* const* argv, const Rules& rules = {}) // ...also if you need to set rules, but not flags
+	Args(int argc, char const* const* argv, const Rules& rules = {}) // ...use this also when you need to set rules, but not flags
 		: argc(argc), argv(argv), param_count(rules) { proc_next("", 0); }
 
-	Args(int argc, const char* const* argv, unsigned flags, const Rules& rules = {}) // ...also if you need to set flags, but not rules
+	Args(int argc, char const* const* argv, unsigned flags, const Rules& rules = {}) // ...when you need to set flags, but not rules
 		: flags(flags), argc(argc), argv(argv), param_count(rules) { proc_next("", 0); }
 
 	Args() = default;
@@ -50,13 +49,13 @@ public:
 
 	void clear() { named_args.clear(); positional_args.clear(); argi = 1; }
 
-	// Check if opt was set:
+	// Check if 'opt' was set:
 	bool operator[](const std::string& opt) const { return named().find(opt) != named().end(); }
 
-	// Return nth (1st by default) value of arg, or "":
-	std::string operator()(const std::string& argname, size_t n = 0) const { return named().find(argname) == named().end()
-	                                                            ? "" : (named().at(argname).size() <= n
-	                                                                   ? "" : named().at(argname)[n]); }
+	// Return nth param. of an option (first (0th) by default), or "":
+	std::string operator()(const std::string& opt, size_t n = 0) const { return named().find(opt) == named().end()
+	                                                            ? "" : (named().at(opt).size() <= n
+	                                                                   ? "" : named().at(opt)[n]); }
 
 	const std::vector<std::string>& positional() const { return positional_args; }
 	      std::vector<std::string>& positional()       { return positional_args; }

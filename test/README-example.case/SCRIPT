@@ -1,0 +1,13 @@
+RUN "$CASE"
+RUN "$CASE" jkh34j5kh32
+RUN "$CASE" -h
+RUN "$CASE" -x
+RUN "$CASE" --long
+RUN "$CASE" -x --long
+RUN "$CASE" --long=77
+RUN "$CASE" -x pos1 --long pos2 pos3
+
+# Note: standalone EXCEPT files don't enjoy param. expansion, so 
+# the exe name would still need to baked in there, unfortunately...
+
+# CLEAN s/[^ ]+.+\.exe/\.\.\.\.exe/
