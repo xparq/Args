@@ -1,15 +1,15 @@
-RUN args-test.exe --take-two a b c
-RUN args-test.exe --take-two=still two
+RUN args-test --take-two a b c
+RUN args-test --take-two=still two
 
 EXPECT "\
--------- NAMED:
+-------- NAMED (1):
 take-two = a, b
--------- POSITIONAL:
+-------- POSITIONAL (1):
 c
 "
 
 EXPECT "\
--------- NAMED:
+-------- NAMED (1):
 take-two = still, two
--------- POSITIONAL:
+-------- POSITIONAL (0):
 "

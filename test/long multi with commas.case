@@ -1,9 +1,9 @@
-RUN args-test.exe --normal=1,2,3-not_an_array! --take-two a b c
+RUN args-test --normal=1,2,3-not_an_array! --take-two a b c
 
 EXPECT "\
--------- NAMED:
+-------- NAMED (2):
 normal = 1,2,3-not_an_array!
 take-two = a, b
--------- POSITIONAL:
+-------- POSITIONAL (1):
 c
 "

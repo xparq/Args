@@ -3,8 +3,8 @@
 RUN args-test.exe -c cfg
 
 EXPECT "\
--------- NAMED:
+-------- NAMED (1):
 c
--------- POSITIONAL:
+-------- POSITIONAL (1):
 cfg
 "

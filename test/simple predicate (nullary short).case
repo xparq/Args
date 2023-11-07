@@ -1,15 +1,15 @@
-RUN args-test.exe -x
-RUN args-test.exe -x 1
+RUN args-test -x
+RUN args-test -x 1
 
 EXPECT "\
--------- NAMED:
+-------- NAMED (1):
 x
--------- POSITIONAL:
+-------- POSITIONAL (0):
 "
 
 EXPECT "\
--------- NAMED:
+-------- NAMED (1):
 x
--------- POSITIONAL:
+-------- POSITIONAL (1):
 1
 "

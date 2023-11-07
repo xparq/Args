@@ -1,0 +1,73 @@
+# Defined options are greedy if they have -1 for their param. count.
+# In the test app -G and --greedy are such options.
+
+RUN args-test --greedy 1 2 3
+EXPECT "\
+-------- NAMED (1):
+greedy = 1, 2, 3
+-------- POSITIONAL (0):
+"
+
+RUN args-test --greedy=1 2 3	# with =
+EXPECT "\
+-------- NAMED (1):
+greedy = 1, 2, 3
+-------- POSITIONAL (0):
+"
+
+RUN args-test -G 1 2 3 -x
+EXPECT "\
+-------- NAMED (2):
+G = 1, 2, 3
+x
+-------- POSITIONAL (0):
+"
+
+RUN args-test -G -x
+EXPECT "\
+-------- NAMED (2):
+G
+x
+-------- POSITIONAL (0):
+"
+
+RUN args-test -G 1 2 3 -- end
+EXPECT "\
+-------- NAMED (1):
+G = 1, 2, 3
+-------- POSITIONAL (1):
+end
+"
+
+# Just to verify that override is still the default:
+RUN args-test --opt=1 --opt=2
+EXPECT "\
+-------- NAMED (1):
+opt = 2
+-------- POSITIONAL (0):
+"
+
+# --greedy is also greedy, but has nothing to eat:
+RUN args-test -G 1 2 3 --greedy
+EXPECT "\
+-------- NAMED (2):
+G = 1, 2, 3
+greedy
+-------- POSITIONAL (0):
+"
+
+SH echo Override with value, long
+RUN args-test --greedy 1 2 3 --greedy=cancelled
+EXPECT "Override with value, long
+-------- NAMED (1):
+greedy = cancelled
+-------- POSITIONAL (0):
+"
+
+# Just to verify that oevrride is still the default:
+RUN args-test --long=1 --long=2
+EXPECT "\
+-------- NAMED (1):
+long = 2
+-------- POSITIONAL (0):
+"

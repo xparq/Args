@@ -23,7 +23,7 @@ FEATURES
 - [x] Options (short or long) can also have multiple parameters --multi a b c
       - [x] query like: args("multi", 2) -> "c",
       - [x] or get them all with args.named("multi") -> std::vector{"a", "b", "c"}
-- [?] Multi-parameter args. can be "greedy" to take each value up to the next opt.,
+- [x] Options can be set to "greedy" to take each value up to the next opt.,
       - [x] or only a fixed n. of values
 - [x] Repeated options override earlier ones by default
 - [ ] Repeated options can also be set to

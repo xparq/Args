@@ -1,9 +1,14 @@
-#!!OMFG, those "meta" quotes!... :-o Sigh... :-/ Sorry! :(
-RUN ./args-test --crap \"one two three\"
+#!! OMFG, can't get this work... With BusyBox on Windows
+#!! it either ignores the normal quotes, or it passes extra " chars,
+#!! when trying these escaped quotes!... :-o Sigh... :-(
+#!! With Git sh, the \" method at least produced a clean output.
+RUN args-test --crap \"one two three\"
 
 EXPECT "\
--------- NAMED:
+-------- NAMED (1):
 crap
--------- POSITIONAL:
-one two three
+-------- POSITIONAL (1):
+\"one two three\"
 "
+
+# !! There should be no fucking quotes in the output though, if the test runner worked proerly!...

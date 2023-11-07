@@ -1,5 +1,7 @@
 /*
-  This file can be #included from test cases, to keep its behavior,
+  Test app to allow resetting the flags + reparsing the args...
+
+  This file can be also be #included from test cases, to keep its behavior,
   but alter the config!
 
   E.g.:
@@ -18,45 +20,97 @@
 //---------------------------------------------------------------------------
 
 #include "Args.hpp"
+#include <string>
+#include <string_view>
+#include <cassert>
 #include <iostream>
 using namespace std;
 
+#define TRY_SET_OR_DEFAULT(var, expr, dflt) {try {var = expr;} catch(...) {var = dflt;}}
 
-auto listvals(auto const& container, const char* tail = "\n", const char* sep = ", ")
+#define CONTAINS(str, chars) ((str).find_first_of(chars) != std::string::npos)
+string listvals(auto const& container, string prewrap = "", string postwrap = "",
+	string sep = ", ", string quote = "\"", string scary_chars = " \t\n")
 {
-	for (auto v = container.begin(); v != container.end(); ++v)
-		cout << (v == container.begin() ? "":sep)
-		     << *v
-		     << (v+1 == container.end() ? tail:"");
+	string result;
+	if (!container.empty()) {
+		// Precalc. size... (Note: we're processing cmd args. We got time.)
+		size_t size = prewrap.size() + (container.size() - 1) * sep.size() + postwrap.size();
+		for (auto& v : container) size += v.length()
+			+ (!quote.empty() && CONTAINS(v, scary_chars) ? // add quotes...
+				(quote.size() > 1 ? quote.size() : 2) : 0); // special case for 1 (-> pair)!
+		result.reserve(size);
+		// Write...
+		result += prewrap;
+		for (auto v = container.begin(); v != container.end(); ++v) { // We'll need v+1, so no range...
+			if (!quote.empty() && CONTAINS(*v, scary_chars))
+				{ result += string_view(quote.c_str(), quote.c_str() + (quote.size()/2 ? quote.size()/2 : 1)); // special case for 1 quote!
+				  result += *v;
+				  result += string_view(quote.c_str() + quote.size()/2); }
+			else    { result += *v; }
+			result += (v+1 == container.end() ? postwrap : sep);
+		}
+		assert(result.size() == size);
+	}
+	return result;
+}
+#undef CONTAINS
+
+
+void dumpargs(Args& args, char prefixchar = '-', const char* longprefix = "--")
+{
+	// Named...
+	for (auto& [name, val] : args.named()) {
+		if (name.length() == 1)
+			cout << prefixchar << name << listvals(val, " ", "", " ");
+		else
+			cout << longprefix << name << listvals(val, "=", "", " ");
+		cout << " ";
+	}
+	// Positional...
+	cout << listvals(args.positional(), "", "", " ");
 }
 
-int main(int argc, char* argv[])
+//----------------------------------------------------------------------------
+int main(int argc, char** argv)
 {
 	Args args(argc, argv, FLAGS_COMMA_IF_DEFINED {
 		{"one", 1},     // take 1 param.
-		{"i", -1},      // short; any nr. of params up to the next arg or EOS
-		{"many", -1},   // long;  any nr. of params up to the next arg or EOS
 		{"take-two", 2},
+		{"2", 2},       // take 2 param, short
+		{"G", -1},      // short greedy; any nr. of params up to the next arg or EOS
+		{"greedy", -1}, // long greedy;  any nr. of params up to the next arg or EOS
 	});
-	//auto exename = args.exename();
 
-	//test: args = Args(argc, argv); // <- no args take params.
-
-	cout << "-------- NAMED: \n";
-	for (auto const& p : args.named()) {
-		cout << p.first << (p.second.empty() ? "\n" : " = ");
-		listvals(p.second);
+	if (!args) {
+		cerr << "Usage: " << args.exename() << "[--flags=<UNSIGNED | xHEX>] [REAL ARGS...]" << '\n';
+		cerr << "\nIf run with --flags, it will reparse the args with the new setting.\n";
+		cerr << "- Default flags: " << args.flags << " (hex: x" << hex << args.flags << ")\n";
+		return 1;
 	}
-
-	cout << "-------- POSITIONAL: \n";
-	listvals(args.positional());
-
+	// Some legacy test cases also use this:
 	if (args["?"] || args["h"] || args["help"]) {
-		cout << "Usage: [-V] [--moons n]" << endl;
-		return 0;
+		cout << "Usage: help..." << '\n';
 	}
-	if (args["V"]) {
-		cout << "Version: ..." << endl;
-		return 0;
+
+	string flags_s = args("flags");
+	unsigned flags;
+	if (flags_s[0] != 'x') {// dec
+		TRY_SET_OR_DEFAULT(flags, stoul(flags_s), args.flags);
+	} else { // hex
+		TRY_SET_OR_DEFAULT(flags, stoul(flags_s.c_str() + 1, nullptr, 16), args.flags);
 	}
+//	cout << args.exename() << " "; dumpargs(args); cout << '\n';
+	if (args["debug"]) cout << "using flags: " << flags << " (hex: x" << hex << flags << ")\n";
+
+	args.reparse(flags, args.known_options);
+
+	cout << "-------- NAMED ("<< args.named().size() <<"): \n";
+	for (auto& [name, val] : args.named()) {
+		cout << name << listvals(val, " = ") << '\n'; // val may itself be a list!
+	}
+	cout << "-------- POSITIONAL ("<< args.positional().size() <<"): \n"
+	     << listvals(args.positional(), "", "\n"); // only \n it if non-empty
+
+	return 0;
 }

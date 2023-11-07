@@ -1,11 +1,11 @@
-RUN args-test.exe --flag --empty= --unknown=param --one spaced
+RUN args-test --flag --empty= --unknown=param --one spaced
 
 # The order differs: std::map is sorted!
 EXPECT "\
--------- NAMED:
+-------- NAMED (4):
 empty
 flag
 one = spaced
 unknown = param
--------- POSITIONAL:
+-------- POSITIONAL (0):
 "
