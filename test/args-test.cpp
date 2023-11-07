@@ -1,4 +1,4 @@
-﻿/*
+/*
   This file can be #included from test cases, to keep its behavior,
   but alter the config!
 

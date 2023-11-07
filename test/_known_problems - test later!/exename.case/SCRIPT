@@ -1,0 +1,39 @@
+#!! The notorious inconsistency between what exactly is in argv[0]
+#!! between MSVC vs. GCC is still making this case fail if built with
+#!! either one (but not the other) of those...
+
+RUN exename --internal-string-ops
+EXPECT "\
+ -> 
+/ -> 
+// -> 
+x/ -> 
+/x -> x
+/x/ -> 
+"
+
+RUN exename.exe --keep-ext
+RUN exename.exe
+
+EXPECT "\
+kept: exename.exe
+cut: exename
+"
+
+# This'll work differently on MSVC and e.g. MinGw-style GCC: the
+# latter keeps the actual cmdline, while MSVC seems to normalize it!
+RUN exename --keep-ext
+RUN exename
+if [ -n "$VCToolsVersion" ] || [ -n "$VCTOOLSVERSION" ]; then
+#	echo MSVC
+	EXPECT "\
+kept: exename.exe
+cut: exename
+"
+else
+#	echo GCC
+	EXPECT "\
+kept: exename
+cut: exename
+"
+fi

@@ -1,4 +1,4 @@
-﻿#include "../../Args.hpp"
+#include "../../Args.hpp"
 
 #include <cassert>
 #include <iostream>

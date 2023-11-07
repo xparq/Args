@@ -221,6 +221,8 @@ SH(){
 	#echo QUOTED ARGS: $qargs
 	#!!Alas, that probably wouldn't help either, after all... See at RUN()!
 
+DEBUG "SH args: [$args]"
+
 		echo "sh -c \"$cmd $args\"" > "$cmdfile"
 		sh -c "$cmd $args" >> "$outfile" 2>> "$errfile"
 		ret=$?

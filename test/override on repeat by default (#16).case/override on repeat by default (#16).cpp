@@ -1,2 +1,2 @@
-﻿#define FLAGS Args::RepeatAppends
+#define FLAGS Args::RepeatAppends
 #include "args-test.cpp"

@@ -7,19 +7,26 @@ _selfdir=`dirname $0`
 export _TEST_ENGINE_DIR=`realpath $_selfdir`
 #!! This will be invalid when sourced (not exec'ed) by a proxy script (-> #51):
 
-_maybe_TEST_DIR=`realpath $_TEST_ENGINE_DIR/..`
 if [ -z "$TEST_DIR" ]; then
-#!!	This (anyway arbitrary) check is useless, while we only support TEST_DIR = ENGINE_DIR/..:
-#	if [ -f "$_maybe_TEST_DIR/run" ] || [ -f "$_maybe_TEST_DIR/run.sh" ] || [ -f "$_maybe_TEST_DIR/run.cmd" ]; then
-		export TEST_DIR=$_maybe_TEST_DIR
-		_reason=" (as detected)"
-#	else
-#		echo "Invalid dir. structure? \"$_maybe_TEST_DIR/run[.sh|.cmd]\" not found!"; exit 126;
-#	fi
+	TEST_DIR=`realpath $_TEST_ENGINE_DIR/..`
+	#!!
+	#!! Check & "refine"...
+	#!!
+	_reason=" (as detected)"
 else
 	_reason=" (as specified)"
 fi
-	echo "Using TEST_DIR${_reason}: $TEST_DIR"
+
+if [ -z "$TEST_DIR" ]; then FATAL "No kidding, TEST_DIR's still empty?!" 125; fi
+
+# As this is our main/only "anchor dir", it must be an abs. path:
+export TEST_DIR="`realpath $TEST_DIR`"
+# !! This (way too arbitrary) check is pretty useless, and is basically just a placeholder/reminder:
+	if [ -z "$TEST_DIR" ] || [ ! -f "$TEST_DIR/run" ] && [ ! -f "$TEST_DIR/run.sh" ] && [ ! -f "$TEST_DIR/run.cmd" ]; then
+		FATAL "Invalid dir. structure? \"$_maybe_TEST_DIR/run[.sh|.cmd]\" not found!" 126;
+	fi
+
+echo "Using TEST_DIR${_reason}: $TEST_DIR"
 
 
 . $_TEST_ENGINE_DIR/init_once.sh    # <- FATALs could abort the process here.

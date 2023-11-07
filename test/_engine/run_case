@@ -135,11 +135,12 @@ export case_variant_counter=0
 
 # NOTE: thist script *itself* may get aborted on severe shell errors in the
 # TC, so we'd better output stderr early, while we still can!...
-
 savecd=`pwd`
 cd "${TEST_CASE_DIR}"
+
 	. "$case_script" 2> >(tee -a "$spacerrfile" >&2)
 	#. "$case_script" 2>> "$errfile"
+
 cd "${savecd}"
 
 

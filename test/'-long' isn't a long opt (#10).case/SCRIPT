@@ -1,16 +1,16 @@
-exe="$CASE.exe"
-
-RUN "$exe" ---long
-RUN "$exe" --long
-RUN "$exe" -long
-RUN "$exe" long
-
-RUN "$exe" -longx
-RUN "$exe" --longx
-
-RUN "$exe" -- long
-
-
-EXPECT "\
-- 'long' was set
-"
+exe="$CASE.exe"
+
+RUN "$exe" ---long
+RUN "$exe" --long
+RUN "$exe" -long
+RUN "$exe" long
+
+RUN "$exe" -longx
+RUN "$exe" --longx
+
+RUN "$exe" -- long
+
+
+EXPECT "\
+- 'long' was set
+"

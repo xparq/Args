@@ -35,6 +35,11 @@ rem NOTE: The `set ...` quoting has to be the way done below to support spaces i
 rem       the paths *AND* commands that are not just a path but also have args.!
 rem !!?? Is there a nicer way for this else-if chain (given that `if` can't run commands)?
 "%~dp0busybox" --help           2>nul >nul && (set _sh_="%~dp0busybox" sh)        && goto endif
+
+rem Maybe the host project has BusyBox? NOTE: We're still better off with that on Windows
+rem than the various other bash clones, as that's what I've been testing all the time!
+busybox --help           2>nul >nul && (set "_sh_=busybox sh")        && goto endif
+
 rem NOTE: We can't use Git's sh version that's typically on the PATH (...Git/usr/bin/sh.exe)
 rem       as it won't find its fellow POSIX commands! :-o
 "%PROGRAMFILES%\Git\bin\sh" --help      2>nul >nul && (set _sh_="%PROGRAMFILES%\Git\bin\sh")      && goto endif
