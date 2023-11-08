@@ -1,0 +1,8 @@
+RUN args-test --one 12345 --unknown=abc --one=-99 
+
+EXPECT "\
+-------- NAMED (2):
+one = -99
+unknown = abc
+-------- POSITIONAL (0):
+"

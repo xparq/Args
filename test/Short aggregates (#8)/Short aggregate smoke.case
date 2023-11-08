@@ -1,0 +1,9 @@
+RUN args-test -abc
+
+EXPECT "\
+-------- NAMED (3):
+a
+b
+c
+-------- POSITIONAL (0):
+"

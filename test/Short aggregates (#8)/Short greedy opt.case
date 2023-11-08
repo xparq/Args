@@ -1,0 +1,22 @@
+# Matched
+RUN args-test -abcG 1 2 3
+EXPECT "\
+-------- NAMED (4):
+G = 1, 2, 3
+a
+b
+c
+-------- POSITIONAL (0):
+"
+
+# Not matched
+RUN args-test -Gabc 1 2 3
+EXPECT "\
+-------- NAMED (4):
+G
+a
+b
+c
+-------- POSITIONAL (3):
+1, 2, 3
+"

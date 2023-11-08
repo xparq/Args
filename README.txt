@@ -5,11 +5,15 @@ FEATURES
 "accidental"...)
 
 - [x] Classic named (option) and unnamed (positional) arguments
-  - [x] intermixed (if the order doesn't matter)
+      - [x] intermixed
 - [x] Prefix char either - or / freely mixed,
       - [ ] but that can be disabled
 - [x] Both short and long options: -x --long
       - [x] Long options only as --long (so //whaaat is always positional)
+- [x] Aggregated short options: -xyz
+      - [x] with the last one possibly taking values: -xyz param-for-z
+      - [x] multiple values, too: -xyZ Zval1 Zval2
+      - [x] greedy, too: -xyZ Zval1 Zval2 ... Zvalx-up to -this
 - [x] A bare -- turns off named args. for the rest of the cmdline by default, but it
       - [x] can be configured to be a regular positional arg. (*for now it always is!*)
 - [x] Options are predicates by default, with simple bool checks: args["x"], args["long"]
@@ -26,10 +30,10 @@ FEATURES
 - [x] Options can be set to "greedy" to take each value up to the next opt.,
       - [x] or only a fixed n. of values
 - [x] Repeated options override earlier ones by default
-- [ ] Repeated options can also be set to
+- [x] Repeated options can also be set to
       - [x] be ignored,
       - [x] append (for multi-val opts.),
-      - [ ] fail
+      - [x] fail
 - [x] Parsing on construction: Args args(argc, argv)
 - [x] Deferred parsing: Args args; args.parse(argc, argv)
 - [x] Reparsing with different config: reparse(flags = Defaults, rules = {})

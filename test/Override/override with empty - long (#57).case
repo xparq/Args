@@ -10,27 +10,8 @@ thing
 
     SH echo Override with empty, long greedy
     RUN args-test --greedy 1 2 3 --greedy
-    EXPECT "Override with empty, long
+    EXPECT "Override with empty, long greedy
 -------- NAMED (1):
 greedy
 -------- POSITIONAL (0):
-"
-    
-# Should also verify this then:
-
-    SH echo Override with empty, short greedy
-    RUN args-test --G 1 2 3 -G
-    EXPECT "Override with empty, long
--------- NAMED (1):
-G
--------- POSITIONAL (0):
-"
-
-    SH echo Override with empty, short
-    RUN args-test -2 a b c -2
-    EXPECT "Override with empty, long
--------- NAMED (1):
-2
--------- POSITIONAL (1):
-c
 "

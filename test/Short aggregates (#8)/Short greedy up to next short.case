@@ -1,0 +1,12 @@
+# Matched
+RUN args-test -efG Gval1 Gval2 ... Gvalx -up to this
+EXPECT "\
+-------- NAMED (5):
+G = Gval1, Gval2, ..., Gvalx
+e
+f
+p
+u
+-------- POSITIONAL (2):
+to, this
+"

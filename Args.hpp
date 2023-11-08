@@ -7,12 +7,12 @@
 #include <cassert>
 //#include <iostream> // cerr, for debugging
 
-class Args // Tiny cmdline processor 1.14 (-> github.com/xparq/Args)
+class Args // Tiny cmdline processor 1.2.0 (-> github.com/xparq/Args)
 {
 public:
 	enum {	Defaults = 0, // Invalid combinations are not checked!
 		RepeatAppends = 1,                     // repeated opt. takes further values (if it can) (default: override) (GH #16)
-		//!! Not yet: RepeatIsError  = 2,      // repeated options set an error flag (default: override) 
+		RepeatIsError = 2,                     // repeated options set an error flag (default: override)
 		//!! Not yet: UnknownIsError = 4,      // unknown options set an error flag (default: accept)
 		//!! Not yet: UnknownIsPositional = 8, // unknown options are treated as positional args (default: accept) (GH #13)
 		DashDashIsPositional         = 16,     // -- is just a positional arg (default: it makes any further args positional)
@@ -23,14 +23,15 @@ public:
 	};
 	unsigned flags = Defaults;   // (not the enum to avoid some annoying restrictions)
 
-	enum Error { None, ParameterMissing, Unimplemented = -1 } error = None;
+	enum Error { None, ParameterMissing = 1, Duplicate = 2, Unimplemented = 0xffff };
+	unsigned error = None;       // (not the enum to avoid some annoying restrictions)
 
 	mutable int argc = 0; // 'mutable' to emphasize that these can be replaced for (and by) reparsing
 	mutable char const* const* argv = nullptr; // "C++ MADE ME DO IT" ;) Being less uptight caused problems in corner cases
 
 	typedef std::map<std::string, int> Rules;
-	Rules known_options;  // entries: { "name", n_of_params_to_take }
-	                      // - negative n means greedy: "at least n", until the next opt (or EOS)
+	Rules known_options;  // { {"name", n_of_params_to_take}, ... }
+	                      // Negative n means greedy: "at least n", until the next opt (or EOS)
 	                      // NOTE: nonexistent entries will return 0, in accordance with NonGreedy (std::map zero-inits primitive types)
 
 	Args(int argc, char const* const* argv, const Rules& rules = {}) // ...use this also when you need to set rules, but not flags
@@ -47,7 +48,7 @@ public:
 		{ clear(); argc = argc_; argv = argv_; flags = flags_, known_options = rules_;
 		  proc_next("", 0); return error == None; }
 
-	bool reparse(unsigned flags_ = Defaults, const Rules& rules_ = {}) // uses the original inputs (which can also be altered)
+	bool reparse(unsigned flags_ = Defaults, const Rules& rules_ = {}) // Uses the original inputs
 		{ return parse(argc, argv, flags_, rules_); }
 
 	void clear() { named_args.clear(); positional_args.clear(); }
@@ -92,47 +93,53 @@ protected:
 
 	void proc_next(const std::string& last_opt, int values_to_take, int next_arg_index = 1, bool options_done = false) {
 		auto get_next_word = [&](){ return std::string(next_arg_index < argc ? argv[next_arg_index++] : ""); };
+		auto handle_duplicate = [this](const std::string& opt){
+			if (!(*this)[opt]) return; // Not a dup.
+			if (  flags & RepeatIsError ) error |= Error::Duplicate;
+			if (!(flags & RepeatAppends)) named_args[opt].clear(); // Reset its param. list...
+		};
 		auto arg = get_next_word();
 		if (arg == "") return;
 		if (options_done) goto process_as_positional; // Idon' wanna see no more if-nesting level...
 		if (values_to_take > 0) { // last_opt still eating parameters?
 	//std::cerr << "- eating '"<< arg <<"' as param. val. for " << last_opt << "\n";
 			assert(!last_opt.empty());
-			named_args[last_opt].emplace_back(arg); // add the current arg as new param. value to last_opt, and...
+			named_args[last_opt].emplace_back(arg); // Add current arg as new param. value to last_opt, and...
 			return proc_next(last_opt, --values_to_take, next_arg_index, options_done); // ...continue with last_opt!
 		}
 		// Option (-x, /x, -aggregate, /aggregate, --thing)?...
-		if ((arg[0] == '-' || arg[0] == '/') && arg.size() > 1) { // option, or -- or // (note: -/ and /- are options)
+		if ((arg[0] == '-' || arg[0] == '/') && arg.size() > 1) { // Option, or -- or // (note: -/ and /- are options!)
 			std::string new_opt;
-			if (arg[1] == '-' && arg.size() > 2) { // likely --long-option, or junk like --$G@%F or ---...
+			if (arg[1] == '-' && arg.size() > 2) { // --long opt.
 				new_opt = arg.substr(2); // OK, we don't check now... ;)
 				// Extract any =value right now, because the next loop cycle can't (even see it)!
+				//! This also allows --unknown=value, so no need for a rule for each arg
 				auto eqpos = new_opt.find_first_of(":=");
-				if (eqpos == std::string::npos) {
-					values_to_take = known_options[new_opt];
-				} else { //! This also allows --unknown-opt=value (no need for a rule)
-					new_opt = new_opt.substr(0, eqpos); // chop off the =...
-					if (!(flags & RepeatAppends)) named_args[new_opt].clear(); // Reset in case it's not actually new?...
-					if (arg.size() > 2 + eqpos + 1) { // value after the =
-	//std::cerr << "val: " << arg.substr(2, eqpos) << "\n";
-						named_args[new_opt].emplace_back(arg.substr(2 + eqpos+1)); //! don't crash on `--opt=`
-						auto pc = known_options[new_opt];
-						// We have taken the offered value regardless of the rules,
-						// but if there's indeed a rule, we're good, 'coz if = 0, then
-						// the value can just be ignored, and if != 0, then we've just
-						// started taking params anyway, the only thing left is to
-						// make sure to continue that if expecting more:
-	//std::cerr << tmp << " params expected for [" << new_opt << "]\n";
-						return proc_next(new_opt, pc<-1 ? pc+1 : (pc ? pc-1:0),
+#define ARG_HAS_EQ eqpos != std::string::npos
+				if (ARG_HAS_EQ) new_opt = new_opt.substr(0, eqpos); // Chop off the =... from the opt. name
+				handle_duplicate(new_opt);
+				if (ARG_HAS_EQ) {
+					if (arg.size() > 2/*for --*/ + eqpos + 1) { // Any value after the =?
+		//std::cerr << "val: " << arg.substr(2, eqpos) << "\n";
+						named_args[new_opt].emplace_back(arg.substr(2 + eqpos+1)); //! Don't crash on `--opt=`
+						auto pc = known_options[new_opt]; // pc: configured param. count, or 0
+						// We have taken (the) one offered value now, regardless of the arity rules!
+						// But, if there's indeed a rule, we're still good, 'coz: if 0, then
+						// the value would just be ignored be the app... :)  And if !0, then
+						// we just need to keep taking more, as needed:
+		//std::cerr << tmp << " params expected for [" << new_opt << "]\n";
+						return proc_next(new_opt, pc<-1? pc+1 : (pc? pc-1 : 0), //!! The pc<-1 case is bogus/incomplete!
 							next_arg_index, options_done);
 					}
-				}
-
-				//!! CHECK ERRORS!
-				//!! ... error = ParameterMissing;
-
+				} else values_to_take = known_options[new_opt]; // Take the next arg(s) instead, if needed
+#undef ARG_HAS_EQ
 			} else if (arg[1] != arg[0]) { // a real short opt, or short opt. aggregate
-				new_opt = arg.substr(1, 1);
+//!!				return proc_next("-" + arg.substr(1), next_arg_index, ...state/mode);
+				for (auto c : arg.substr(1)) {
+					new_opt = std::string(1, c);
+					handle_duplicate(new_opt);
+					named_args[new_opt];
+				}
 			} else { // -- (by default) or //whatever (always) are positional
 				assert(arg[1] == arg[0]); // (In case I'd reshuffle the cond. above...)
 				if (arg == "--" && !(flags & DashDashIsPositional)) {
@@ -156,7 +163,7 @@ protected:
 
 	process_as_positional:
 	//std::cerr << "- adding unnamed arg (or eating it as param): "<< arg <<"\n";
-		if (values_to_take < 0) { // Well, there's still this greedy option-param override, so...:
+		if (values_to_take < 0) { // Well, there's still this greedy option-param case first, so...:
 			named_args[last_opt].emplace_back(arg);
 			return proc_next(last_opt, values_to_take, next_arg_index, options_done);
 		} else {

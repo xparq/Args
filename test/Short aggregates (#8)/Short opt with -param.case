@@ -1,0 +1,32 @@
+# Take 1
+RUN args-test -abc1 -1
+EXPECT "\
+-------- NAMED (4):
+1 = -1
+a
+b
+c
+-------- POSITIONAL (0):
+"
+
+# Take 1
+RUN args-test -abc1 --also-just-a-param-for-1
+EXPECT "\
+-------- NAMED (4):
+1 = --also-just-a-param-for-1
+a
+b
+c
+-------- POSITIONAL (0):
+"
+
+# Take 2
+RUN args-test -abc2 for -2
+EXPECT "\
+-------- NAMED (4):
+2 = for, -2
+a
+b
+c
+-------- POSITIONAL (0):
+"

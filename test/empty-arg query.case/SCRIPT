@@ -1,5 +1,7 @@
 exe="$CASE.exe"
 
 RUN "$exe" --arg=
+EXPECT "arg is empty"
 
+RUN "$exe" --arg
 EXPECT "arg is empty"

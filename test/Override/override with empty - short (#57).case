@@ -1,0 +1,16 @@
+    SH echo Override with empty, short greedy
+    RUN args-test --G 1 2 3 -G
+    EXPECT "Override with empty, short greedy
+-------- NAMED (1):
+G
+-------- POSITIONAL (0):
+"
+
+    SH echo Override with empty, short
+    RUN args-test -2 a b c -2
+    EXPECT "Override with empty, short
+-------- NAMED (1):
+2
+-------- POSITIONAL (1):
+c
+"

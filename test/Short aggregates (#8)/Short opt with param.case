@@ -1,0 +1,23 @@
+# Take 1
+RUN args-test -abc1 1 2 3
+EXPECT "\
+-------- NAMED (4):
+1 = 1
+a
+b
+c
+-------- POSITIONAL (2):
+2, 3
+"
+
+# Take 2
+RUN args-test -abc2 1 2 3
+EXPECT "\
+-------- NAMED (4):
+2 = 1, 2
+a
+b
+c
+-------- POSITIONAL (1):
+3
+"

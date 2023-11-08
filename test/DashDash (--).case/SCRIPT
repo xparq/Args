@@ -1,9 +1,9 @@
-RUN args-test -1 -- -2
+RUN args-test -a -- -b
 EXPECT "\
 -------- NAMED (1):
-1
+a
 -------- POSITIONAL (1):
--2
+-b
 "
 
 RUN args-test -- -- --file
@@ -23,11 +23,11 @@ EXPECT "\
 ####################################
 # DashDashIsPositional (flags = 16)
 ####################################
-RUN args-test --flags=16 -1 -- -2
+RUN args-test --flags=16 -a -- -b
 EXPECT "\
 -------- NAMED (3):
-1
-2
+a
+b
 flags = 16
 -------- POSITIONAL (1):
 --

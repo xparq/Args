@@ -75,7 +75,8 @@ void dumpargs(Args& args, char prefixchar = '-', const char* longprefix = "--")
 int main(int argc, char** argv)
 {
 	Args args(argc, argv, FLAGS_COMMA_IF_DEFINED {
-		{"one", 1},     // take 1 param.
+		{"one", 1},     // take 1 param., long
+		{"1", 1},       // take 1 param., short
 		{"take-two", 2},
 		{"2", 2},       // take 2 param, short
 		{"G", -1},      // short greedy; any nr. of params up to the next arg or EOS
@@ -83,9 +84,11 @@ int main(int argc, char** argv)
 	});
 
 	if (!args) {
-		cerr << "Usage: " << args.exename() << "[--flags=<UNSIGNED | xHEX>] [REAL ARGS...]" << '\n';
-		cerr << "\nIf run with --flags, it will reparse the args with the new setting.\n";
-		cerr << "- Default flags: " << args.flags << " (hex: x" << hex << args.flags << ")\n";
+		cerr << "Usage: " << args.exename() << "[--flags=<UNSIGNED | xHEX>] [REAL ARGS...] [--debug]" << '\n';
+		cerr << "\n	If run with --flags, it will reparse the args with the new setting.\n";
+		cerr << "	Default flags: " << args.flags << " (hex: x" << hex << args.flags << ")\n";
+		cerr << "\n	--debug: output more, like error codes etc.\n";
+		cerr << "\n	--cmdgen: regenerate (approx.) command line from the parsed args.\n";
 		return 1;
 	}
 	// Some legacy test cases also use this:
@@ -100,8 +103,6 @@ int main(int argc, char** argv)
 	} else { // hex
 		TRY_SET_OR_DEFAULT(flags, stoul(flags_s.c_str() + 1, nullptr, 16), args.flags);
 	}
-//	cout << args.exename() << " "; dumpargs(args); cout << '\n';
-	if (args["debug"]) cout << "using flags: " << flags << " (hex: x" << hex << flags << ")\n";
 
 	args.reparse(flags, args.known_options);
 
@@ -111,6 +112,13 @@ int main(int argc, char** argv)
 	}
 	cout << "-------- POSITIONAL ("<< args.positional().size() <<"): \n"
 	     << listvals(args.positional(), "", "\n"); // only \n it if non-empty
+
+if (args["debug"]) {
+	cout << "-------- ERROR: " << dec << args.error << '\n';
+	cout << "flags: " << flags << " (hex: x" << hex << flags << ")\n";
+}
+	if (args["cmdgen"]) { cout << args.exename() << " "; dumpargs(args); cout << '\n'; }
+
 
 	return 0;
 }

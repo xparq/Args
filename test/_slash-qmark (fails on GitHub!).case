@@ -1,0 +1,10 @@
+# Sigh, again... I just can't quote this properly, to avoid an inadvertent
+# match for /a at GitHub... :-(
+
+RUN args-test \'/?\'
+EXPECT "\
+Usage: help...
+-------- NAMED (1):
+?
+-------- POSITIONAL (0):
+"

@@ -8,20 +8,24 @@
 
 # Defaults
 RUN args-test --arg=1 --arg=2 --debug
-EXPECT "using flags: 0 (hex: x0)
+EXPECT "\
 -------- NAMED (2):
 arg = 2
 debug
 -------- POSITIONAL (0):
+-------- ERROR: 0
+flags: 0 (hex: x0)
 "
 
 # RepeatAppends
 RUN args-test --arg=1 2 junk --arg=a b --flags=1 --debug
-EXPECT "using flags: 1 (hex: x1)
+EXPECT "\
 -------- NAMED (3):
 arg = 1, a
 debug
 flags = 1
 -------- POSITIONAL (3):
 2, junk, b
+-------- ERROR: 0
+flags: 1 (hex: x1)
 "
