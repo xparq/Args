@@ -7,7 +7,7 @@
 #include <cassert>
 //#include <iostream> // cerr, for debugging
 
-class Args // Tiny cmdline processor 1.2.0 (-> github.com/xparq/Args)
+class Args // Tiny cmdline processor 1.2.1 (-> github.com/xparq/Args)
 {
 public:
 	enum {	Defaults = 0, // Invalid combinations are not checked!
@@ -70,7 +70,7 @@ public:
 
 	// Remember: this is coming from the command that eventually launched the exe, so it
 	// could be "anything"... E.g. no guarantee that it ends with ".exe" on Windows etc.
-	std::string exename(bool keep_as_is = false, std::string ext = ".exe") {
+	std::string exename(bool keep_as_is = false, std::string ext = ".exe") const {
 		// Anyway, if it has a path, remove it:
 		std::string basename(std::string(argv[0]).substr(std::string(argv[0]).find_last_of("/\\") + 1));
 		if (keep_as_is) { return basename; }
