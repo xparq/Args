@@ -1,3 +1,4 @@
+// Tiny cmdline processor 1.2.4 (https://github.com/xparq/Args)
 #ifndef _ASDCVHF374Y192S84DTYBF87HY39486CVATY_
 
 #include <string>
@@ -6,7 +7,7 @@
 #include <cassert>
 //#include <iostream> // cerr, for debugging
 
-class Args // Tiny cmdline processor 1.2.2 (-> github.com/xparq/Args)
+class Args
 {
 public:
 	enum {	Defaults = 0, // Invalid combinations are not checked!
@@ -70,12 +71,19 @@ public:
 
 	// Remember: this is coming from the command that eventually launched the exe, so it
 	// could be "anything"... E.g. no guarantee that it ends with ".exe" on Windows etc.
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 	std::string exename(bool keep_as_is = false, std::string ext = ".exe") const {
 		// Anyway, if it has a path, remove it:
 		std::string basename(std::string(argv[0]).substr(std::string(argv[0]).find_last_of("/\\") + 1));
 		if (keep_as_is) { return basename; }
 		else { return basename.substr(0, basename.rfind(ext)); }
 	}
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 	bool operator !() const { return argc < 2; }
 //	operator bool() const { return !!*this; }
@@ -100,7 +108,7 @@ protected:
 		};
 		auto arg = get_next_word();
 		if (arg == "") return;
-		if (options_done) goto process_as_positional; // Idon' wanna see no more if-nesting level...
+		if (options_done) goto process_as_positional; // Not another nested if level!...
 		if (values_to_take > 0) { // last_opt still eating parameters?
 	//std::cerr << "- eating '"<< arg <<"' as param. val. for " << last_opt << "\n";
 			assert(!last_opt.empty());
