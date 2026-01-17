@@ -1,6 +1,8 @@
 	#include "Args.hpp"
 	#include <iostream>
 	using std::cout;
+	using namespace std::string_literals;
+
 	int main(int argc, char** argv)
 	{
 		Args args(argc, argv);
@@ -15,9 +17,9 @@
 		if (args["x"])
 			cout << "  'x' was set\n";
 
-		if (args["long"])
-			cout << "  'long' was set"
-			     << (args("long").empty() ? "" : " to " + args("long"))
+		if (auto x = args["long"])
+			cout << "  'long' was set to "
+			     << (x.empty() ? "nothing"s : x)
 			     << '\n';
 
 		for (auto a: args.positional())

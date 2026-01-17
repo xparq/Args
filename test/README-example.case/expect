@@ -6,15 +6,15 @@ Usage: README-example [-h] [-x] [--long]
 Some args are present.
   'x' was set
 Some args are present.
-  'long' was set
+  'long' was set to nothing
 Some args are present.
   'x' was set
-  'long' was set
+  'long' was set to nothing
 Some args are present.
   'long' was set to 77
 Some args are present.
   'x' was set
-  'long' was set
+  'long' was set to nothing
   positional arg.: pos1
   positional arg.: pos2
   positional arg.: pos3

@@ -55,6 +55,7 @@ EXAMPLES
 	#include "Args.hpp"
 	#include <iostream>
 	using std::cout;
+	using namespace std::string_literals;
 	int main(int argc, char** argv)
 	{
 		Args args(argc, argv);
@@ -69,9 +70,9 @@ EXAMPLES
 		if (args["x"])
 			cout << "  'x' was set\n";
 
-		if (args["long"])
-			cout << "  'long' was set"
-			     << (args("long").empty() ? "" : " to " + args("long"))
+		if (auto x = args["long"]) // x is like optional<string>, but with the direct std::string API!
+			cout << "  'long' was set to"
+			     << (x.empty() ? "nothing"s : x) // "..."s because x is a string; the ternary branches must match.
 			     << '\n';
 
 		for (auto a: args.positional())

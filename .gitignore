@@ -7,3 +7,5 @@ tmp/
 *.off
 *.old
 *.bak
+
+test/OptStr-queries/OptStr-queries

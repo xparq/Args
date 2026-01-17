@@ -1,5 +1,6 @@
 # Self-test the --flags arg in the test app, used to override the default Args.flags for reparsing
 
+#!! OLD, OBSOLETE LIST:
 # Defaults = 0,
 # RepeatAppends = 1,   // for opts. expecting >1 params; default: override (replace) (GH #16)
 # RejectUnknown = 2,   // undefined options are treated as positional args; default: accept (GH #13)
@@ -17,15 +18,15 @@ debug
 flags: 0 (hex: x0)
 "
 
-# RepeatAppends
-RUN args-test --arg=1 2 junk --arg=a b --flags=1 --debug
+# RepeatAppends (flag:2)
+RUN args-test --arg=1 2 junk --arg=a b --flags=2 --debug
 EXPECT "\
 -------- NAMED (3):
 arg = 1, a
 debug
-flags = 1
+flags = 2
 -------- POSITIONAL (3):
 2, junk, b
 -------- ERROR: 0
-flags: 1 (hex: x1)
+flags: 2 (hex: x2)
 "

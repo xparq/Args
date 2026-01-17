@@ -1,10 +1,10 @@
-RUN args-test --flags=2 -a -a --debug
+RUN args-test --flags=1 -a -a --debug
 EXPECT "\
 -------- NAMED (3):
 a
 debug
-flags = 2
+flags = 1
 -------- POSITIONAL (0):
 -------- ERROR: 2
-flags: 2 (hex: x2)
+flags: 1 (hex: x1)
 "

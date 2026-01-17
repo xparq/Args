@@ -1,0 +1,33 @@
+RUN $CASE --flag_set
+EXPECT "OK, flag is set.
+"
+
+RUN $CASE -o
+EXPECT "\
+o as bool: 1
+o as int: 0
+"
+
+RUN $CASE --opt
+EXPECT "\
+opt as bool: 1
+opt as int: 0
+"
+
+RUN $CASE --opt=
+EXPECT "\
+opt as bool: 1
+opt as int: 0
+"
+
+RUN $CASE --opt=false
+EXPECT "\
+opt as bool: 0
+opt as int: 0
+"
+
+RUN $CASE --opt=3
+EXPECT "\
+opt as bool: 1
+opt as int: 3
+"

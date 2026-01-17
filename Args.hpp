@@ -1,4 +1,4 @@
-// Tiny cmdline processor 1.2.4 (https://github.com/xparq/Args)
+// Tiny cmdline processor 2.0.0 (https://github.com/xparq/Args)
 #ifndef _ASDCVHF374Y192S84DTYBF87HY39486CVATY_
 
 #include <string>
@@ -11,8 +11,8 @@ class Args
 {
 public:
 	enum {	Defaults = 0, // Invalid combinations are not checked!
-		RepeatAppends = 1,                     // repeated opt. takes further values (if it can) (default: override) (GH #16)
-		RepeatIsError = 2,                     // repeated options set an error flag (default: override)
+		RepeatIsError = 1,                     // repeated options set an error flag (default: override)
+		RepeatAppends = 2,                     // repeated opt. takes further values (if it can) (default: override) (GH #16)
 		//!! Not yet: UnknownIsError = 4,      // unknown options set an error flag (default: accept)
 		//!! Not yet: UnknownIsPositional = 8, // unknown options are treated as positional args (default: accept) (GH #13)
 		DashDashIsPositional         = 16,     // -- is just a positional arg (default: it makes any further args positional)
@@ -53,14 +53,29 @@ public:
 
 	void clear() { named_args.clear(); positional_args.clear(); }
 
-	// Check if "opt" was set:
-	bool operator[](const std::string& opt) const { return named().find(opt) != named().end(); }
+	struct OptStr : public std::string {
+		bool set = false;
+		         OptStr() = default;
+		explicit OptStr(std::string str) : std::string(str), set(true) {}
+		explicit operator bool() const { return set; }
+		template <typename T> T get_or(T deflt) const { return set ? deflt : as<T>(); }
+		template <typename T> T as() const { static_assert(!sizeof(T), "Unsupported getter!"); }
+	};
+
+	// Get the value of a named arg. as a "poor man's optional<string>", checkable for "set?"
+	// (true even if empty), supporting `if (auto x = Args["opt"])` and then `val = x.as<...>()`.
+	// The *value* of just `--predicate` (and also `--flag=`!) is defined to be `true`, but
+	// it's enough to just check "if set" for those, obviously.
+	// (Note: This design is only possible because std::string doesn't have an op bool! *Some* reward for all the suffering... ;) )
+	OptStr operator[](const std::string& opt) const { return named().find(opt) == named().end() ?
+	                                                         OptStr()   :       !named().at(opt).size() ?
+	                                                         OptStr("") : OptStr(named().at(opt)[0]); }
 	// Get the nth positional arg, or "" if none:
 	std::string operator[](unsigned n) const { return positional().size() > n ? positional()[n] : ""; }
 	// Get the nth param. of "opt" (first (0th) by default), or "":
-	std::string operator()(const std::string& opt, unsigned n = 0) const { return named().find(opt) == named().end()
-	                                                            ? "" : (named().at(opt).size() <= n
-	                                                                   ? "" : named().at(opt)[n]); }
+	std::string operator()(const std::string& opt, unsigned n = 0) const { return named().find(opt) == named().end() ?
+	                                                                      "" : (named().at(opt).size() <= n ?
+	                                                                      "" :  named().at(opt)[n]); }
 
 	const std::vector<std::string>& positional() const { return positional_args; }
 	      std::vector<std::string>& positional()       { return positional_args; }
@@ -85,15 +100,7 @@ public:
 #pragma GCC diagnostic pop
 #endif
 
-	bool operator !() const { return argc < 2; }
-//	operator bool() const { return !!*this; }
-	//! Enabling op bool would break args["opt"] due to a weird ambiguity, where the
-	//! compiler would suddenly think it may also match the builtin "opt"[int]! :-o
-	//! It's due to it trying a match with autoconverted bool->int before the "real thing".
-	//! The hacky workaround below may be good enough though (but certainly not "good":
-	//! -> https://www.artima.com/articles/the-safe-bool-idiom)
-	//! Just comment it out, if you feel offended! ;)
-	operator const void*() const { return !(*this) ? nullptr : (void*)this; }
+	explicit operator bool() const { return argc > 1; }
 
 protected:
 	std::map<std::string, std::vector<std::string>> named_args;
@@ -123,10 +130,10 @@ protected:
 				// Extract any =value right now, because the next loop cycle can't (even see it)!
 				//! This also allows --unknown=value, so no need for a rule for each arg
 				auto eqpos = new_opt.find_first_of(":=");
-#define ARG_HAS_EQ eqpos != std::string::npos
-				if (ARG_HAS_EQ) new_opt = new_opt.substr(0, eqpos); // Chop off the =... from the opt. name
+#define _ARG_HAS_EQ eqpos != std::string::npos
+				if (_ARG_HAS_EQ) new_opt = new_opt.substr(0, eqpos); // Chop off the =... from the opt. name
 				handle_duplicate(new_opt);
-				if (ARG_HAS_EQ) {
+				if (_ARG_HAS_EQ) {
 					if (arg.size() > 2/*for --*/ + eqpos + 1) { // Any value after the =?
 		//std::cerr << "val: " << arg.substr(2, eqpos) << "\n";
 						named_args[new_opt].emplace_back(arg.substr(2 + eqpos+1)); //! Don't crash on `--opt=`
@@ -140,7 +147,7 @@ protected:
 							next_arg_index, options_done);
 					}
 				} else values_to_take = known_options[new_opt]; // Take the next arg(s) instead, if needed
-#undef ARG_HAS_EQ
+#undef _ARG_HAS_EQ
 			} else if (arg[1] != arg[0]) { // a real short opt, or short opt. aggregate
 //!!				return proc_next("-" + arg.substr(1), next_arg_index, ...state/mode);
 				for (auto c : arg.substr(1)) {
@@ -180,6 +187,17 @@ protected:
 		}
 	};
 };
+
+// C++ doesn't let us keep these where they belong ("in non-namespace scope") :-/ (MSVC does, tho.)
+template <> bool     Args::OptStr::as() const { return *this != "0" && *this != "false" && *this != "off" && *this != "no"  && *this != "disabled"; };
+template <> int      Args::OptStr::as() const { try { return std::stoi (*this); } catch(...) { return 0; } }
+template <> long     Args::OptStr::as() const { try { return std::stol (*this); } catch(...) { return 0; } }
+template <> unsigned Args::OptStr::as() const { try { return std::stoul(*this); } catch(...) { return 0; } }
+template <> float    Args::OptStr::as() const { try { return std::stof (*this); } catch(...) { return 0; } }
+template <> double   Args::OptStr::as() const { try { return std::stod (*this); } catch(...) { return 0; } }
+// An op<< to print without casting (to std::string):
+template <typename Out>
+Out& operator << (Out& out, const Args::OptStr& s) { out.put(static_cast<std::string&>(s)); return out; }
 
 #define _ASDCVHF374Y192S84DTYBF87HY39486CVATY_
 #endif//_ASDCVHF374Y192S84DTYBF87HY39486CVATY_
