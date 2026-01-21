@@ -1,4 +1,4 @@
-// Tiny cmdline processor 2.0.0 (https://github.com/xparq/Args)
+// Tiny cmdline processor 2.0.2 (https://github.com/xparq/Args)
 #ifndef _ASDCVHF374Y192S84DTYBF87HY39486CVATY_
 
 #include <string>
@@ -189,15 +189,15 @@ protected:
 };
 
 // C++ doesn't let us keep these where they belong ("in non-namespace scope") :-/ (MSVC does, tho.)
-template <> bool     Args::OptStr::as() const { return *this != "0" && *this != "false" && *this != "off" && *this != "no"  && *this != "disabled"; };
-template <> int      Args::OptStr::as() const { try { return std::stoi (*this); } catch(...) { return 0; } }
-template <> long     Args::OptStr::as() const { try { return std::stol (*this); } catch(...) { return 0; } }
-template <> unsigned Args::OptStr::as() const { try { return std::stoul(*this); } catch(...) { return 0; } }
-template <> float    Args::OptStr::as() const { try { return std::stof (*this); } catch(...) { return 0; } }
-template <> double   Args::OptStr::as() const { try { return std::stod (*this); } catch(...) { return 0; } }
+template <> inline bool     Args::OptStr::as() const { return *this != "0" && *this != "false" && *this != "off" && *this != "no"  && *this != "disabled"; };
+template <> inline int      Args::OptStr::as() const { try { return std::stoi (*this); } catch(...) { return 0; } }
+template <> inline long     Args::OptStr::as() const { try { return std::stol (*this); } catch(...) { return 0; } }
+template <> inline unsigned Args::OptStr::as() const { try { return std::stoul(*this); } catch(...) { return 0; } }
+template <> inline float    Args::OptStr::as() const { try { return std::stof (*this); } catch(...) { return 0; } }
+template <> inline double   Args::OptStr::as() const { try { return std::stod (*this); } catch(...) { return 0; } }
 // An op<< to print without casting (to std::string):
 template <typename Out>
-Out& operator << (Out& out, const Args::OptStr& s) { out.put(static_cast<std::string&>(s)); return out; }
+Out& operator << (Out& out, const Args::OptStr& s) { out.put(static_cast<const std::string&>(s)); return out; }
 
 #define _ASDCVHF374Y192S84DTYBF87HY39486CVATY_
 #endif//_ASDCVHF374Y192S84DTYBF87HY39486CVATY_
