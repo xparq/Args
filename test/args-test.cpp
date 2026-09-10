@@ -84,7 +84,7 @@ int main(int argc, char** argv)
 	});
 
 	if (!args) {
-		cerr << "Usage: " << args.exename() << "[--flags=<UNSIGNED | xHEX>] [REAL ARGS...] [--debug]" << '\n';
+		cerr << "Usage: " << args.exename() << " [--flags=<UNSIGNED | xHEX>] [REAL ARGS...] [--debug]" << '\n';
 		cerr << "\n	If run with --flags, it will reparse the args with the new setting.\n";
 		cerr << "	Default flags: " << args.flags << " (hex: x" << hex << args.flags << ")\n";
 		cerr << "\n	--debug: output more, like error codes etc.\n";
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
 		TRY_SET_OR_DEFAULT(flags, stoul(flags_s.c_str() + 1, nullptr, 16), args.flags);
 	}
 
-	args.reparse(flags, args.known_options);
+	args.reparse(flags, args.opt_rules);
 
 	cout << "-------- NAMED ("<< args.named().size() <<"): \n";
 	for (auto& [name, val] : args.named()) {

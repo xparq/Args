@@ -1,5 +1,6 @@
-// Tiny cmdline processor 2.0.2 (https://github.com/xparq/Args)
-#ifndef _ASDCVHF374Y192S84DTYBF87HY39486CVATY_
+// Tiny cmdline processor 3.0.0 (https://github.com/xparq/Args)
+#ifndef ASDCVHF374Y192S84DTYBF87HY39486CVATY
+#define ASDCVHF374Y192S84DTYBF87HY39486CVATY
 
 #include <string>
 #include <vector>
@@ -20,53 +21,59 @@ public:
 		//!! Not yet: DeleteInvalid  = 64,     // remove known options that got incorrect # of params (GH #44)
 		//!! Not yet: IgnoreCase     = 128,    // option names are case-insensitive (default: case-sensitive)
 		//!! Not yet: Greedy         = 256,    // unknown options take as many params as they can (default: only --unknown= takes 1) (GH #43)
+		NoSlashOptions = 512,                  // only dashes
 	};
-	unsigned flags = Defaults;   // (not the enum to avoid some annoying restrictions)
+	unsigned flags = Defaults;   // (not the enum, to avoid some annoying C++ restrictions)
 
 	enum Error { None, ParameterMissing = 1, Duplicate = 2, Unimplemented = 0xffff };
 	unsigned error = None;       // (not the enum to avoid some annoying restrictions)
 
 	mutable int argc = 0; // 'mutable' to emphasize that these can be replaced for (and by) reparsing
-	mutable char const* const* argv = nullptr; // "C++ MADE ME DO IT" ;) Being less uptight caused problems in corner cases
+	mutable char const* const* argv = nullptr; // "C++ MADE ME DO IT!" Being less uptight caused problems in corner cases
 
 	typedef std::map<std::string, int> Rules;
-	Rules known_options;  // { {"name", n_of_params_to_take}, ... }
-	                      // Negative n means greedy: "at least n", until the next opt (or EOS)
-	                      // NOTE: nonexistent entries will return 0, in accordance with NonGreedy (std::map zero-inits primitive types)
-
-	Args(int argc, char const* const* argv, const Rules& rules = {}) // ...use this also when you need to set rules, but not flags
-		: argc(argc), argv(argv), known_options(rules) { proc_next("", 0); }
-
-	Args(int argc, char const* const* argv, unsigned flags, const Rules& rules = {}) // ...when you need to set flags, but not rules
-		: flags(flags), argc(argc), argv(argv), known_options(rules) { proc_next("", 0); }
+	Rules opt_rules;  // { {"name", n_of_params_to_take}, ... }
+	                  // Negative n means variadic: *at least* n, until the next opt (or EOS)
+	                  // NOTE: nonexistent entries will return 0, in accordance with NonGreedy (std::map zero-inits primitive types)
 
 	Args() = default;
+
+	Args(int _argc, char const* const* _argv, const Rules& rules = {}) // ...use this also when you need to set rules, but not flags
+		: argc(_argc), argv(_argv), opt_rules(rules) { proc_next("", 0); }
+
+	Args(int _argc, char const* const* _argv, unsigned cfg, const Rules& rules = {}) // ...when you need to set flags, but not rules
+		: flags(cfg), argc(_argc), argv(_argv), opt_rules(rules) { proc_next("", 0); }
+
 	Args(const Args&) = default;
 	Args& operator=(const Args&) = default;
 
-	bool parse(int argc_, const char* const* argv_, unsigned flags_ = Defaults, const Rules& rules_ = {})
-		{ clear(); argc = argc_; argv = argv_; flags = flags_, known_options = rules_;
+	bool parse(int _argc, const char* const* _argv, unsigned cfg = Defaults, const Rules& rules = {})
+		{ clear(); argc = _argc; argv = _argv; flags = cfg, opt_rules = rules;
 		  proc_next("", 0); return error == None; }
 
-	bool reparse(unsigned flags_ = Defaults, const Rules& rules_ = {}) // Uses the original inputs
-		{ return parse(argc, argv, flags_, rules_); }
+	bool reparse(unsigned cfg = Defaults, const Rules& rules = {}) // Uses the original inputs
+		{ return parse(argc, argv, cfg, rules); }
 
 	void clear() { named_args.clear(); positional_args.clear(); }
 
+	// Poor man's optional<string> (used by op[] below)
 	struct OptStr : public std::string {
-		bool set = false;
-		         OptStr() = default;
-		explicit OptStr(std::string str) : std::string(str), set(true) {}
-		explicit operator bool() const { return set; }
-		template <typename T> T get_or(T deflt) const { return set ? deflt : as<T>(); }
+		bool set_ = false;  // Was the arg specified at all?
+		bool set() const { return set_; } // Note: complements the inherited empty() nicely.
+		         OptStr() noexcept = default;
+		explicit OptStr(std::string str) : std::string(str), set_(true) {}
+		template <typename T> T get_or(T deflt) const { return set_ ? as<T>() : deflt; }
 		template <typename T> T as() const { static_assert(!sizeof(T), "Unsupported getter!"); }
+		explicit operator bool() const; //!! { return as<bool>(); } <- DOESN'T COMPILE HERE! :-/
 	};
 
-	// Get the value of a named arg. as a "poor man's optional<string>", checkable for "set?"
-	// (true even if empty), supporting `if (auto x = Args["opt"])` and then `val = x.as<...>()`.
-	// The *value* of just `--predicate` (and also `--flag=`!) is defined to be `true`, but
-	// it's enough to just check "if set" for those, obviously.
-	// (Note: This design is only possible because std::string doesn't have an op bool! *Some* reward for all the suffering... ;) )
+	// Get the value of a named arg. as OptStr (coerced via as<bool>() in bool contexts)
+	// Note: `if (["x"])` for `--x`, or `-x` is true, BUT SO IS `--x=` (unless explicitly
+	// set to false (like `--x=off`). So, `x.as<bool>()` is true when x.empty()!
+	// It's always cleaner to check with .set() explicitly if there's any ambiguity:
+	// `if (auto x = args["x"]; x.set()) cfg.x = x.as<float>();`
+	// or better yet: `cfg.x = args["x"].get_or(3.14f)`.
+	// (Note: if ["x"] just meant "was x set?", it'd need to return true also for `--x=false`!)
 	OptStr operator[](const std::string& opt) const { return named().find(opt) == named().end() ?
 	                                                         OptStr()   :       !named().at(opt).size() ?
 	                                                         OptStr("") : OptStr(named().at(opt)[0]); }
@@ -109,7 +116,7 @@ protected:
 	void proc_next(const std::string& last_opt, int values_to_take, int next_arg_index = 1, bool options_done = false) {
 		auto get_next_word = [&](){ return std::string(next_arg_index < argc ? argv[next_arg_index++] : ""); };
 		auto handle_duplicate = [this](const std::string& opt){
-			if (!(*this)[opt]) return; // Not a dup.
+			if (!named().contains(opt)) return; // Not a dup.
 			if (  flags & RepeatIsError ) error |= Error::Duplicate;
 			if (!(flags & RepeatAppends)) named_args[opt].clear(); // Reset its param. list...
 		};
@@ -122,41 +129,44 @@ protected:
 			named_args[last_opt].emplace_back(arg); // Add current arg as new param. value to last_opt, and...
 			return proc_next(last_opt, --values_to_take, next_arg_index, options_done); // ...continue with last_opt!
 		}
-		// Option (-x, /x, -aggregate, /aggregate, --thing)?...
-		if ((arg[0] == '-' || arg[0] == '/') && arg.size() > 1) { // Option, or -- or // (note: -/ and /- are options!)
+		// Option (-x, /x, -aggregate, /aggregate, --long, --, //...)?...
+		if ((arg[0] == '-' || (!(flags & NoSlashOptions) && arg[0] == '/'))
+				&& arg.size() > 1) { // (Note: -/ and /- are options, // is not!)
 			std::string new_opt;
 			if (arg[1] == '-' && arg.size() > 2) { // --long opt.
 				new_opt = arg.substr(2); // OK, we don't check now... ;)
 				// Extract any =value right now, because the next loop cycle can't (even see it)!
 				//! This also allows --unknown=value, so no need for a rule for each arg
 				auto eqpos = new_opt.find_first_of(":=");
-#define _ARG_HAS_EQ eqpos != std::string::npos
-				if (_ARG_HAS_EQ) new_opt = new_opt.substr(0, eqpos); // Chop off the =... from the opt. name
+				bool arg_has_eq = eqpos != std::string::npos;
+				if (arg_has_eq) new_opt = new_opt.substr(0, eqpos); // Chop off the =... from the opt. name
 				handle_duplicate(new_opt);
-				if (_ARG_HAS_EQ) {
+				if (arg_has_eq) {
 					if (arg.size() > 2/*for --*/ + eqpos + 1) { // Any value after the =?
 		//std::cerr << "val: " << arg.substr(2, eqpos) << "\n";
 						named_args[new_opt].emplace_back(arg.substr(2 + eqpos+1)); //! Don't crash on `--opt=`
-						auto pc = known_options[new_opt]; // pc: configured param. count, or 0
-						// We have taken (the) one offered value now, regardless of the arity rules!
-						// But, if there's indeed a rule, we're still good, 'coz: if 0, then
-						// the value would just be ignored be the app... :)  And if !0, then
-						// we just need to keep taking more, as needed:
+						auto pc = opt_rules[new_opt]; // pc: configured param. count, or 0
+						// We have taken (the) one param. now, regardless of any arity rules.
+						// If there is a rule, and it says 0, the value is just gonna get
+						// ignored by the app (well, an error would be nice!...), beyond
+						// making the option evaluate true as a predicate, of course. And if
+						// the rule is !0, we just continue taking more, or none, as prescribed:
 		//std::cerr << tmp << " params expected for [" << new_opt << "]\n";
 						return proc_next(new_opt, pc<-1? pc+1 : (pc? pc-1 : 0), //!! The pc<-1 case is bogus/incomplete!
 							next_arg_index, options_done);
+					} else {
+		//std::cerr << "--"<<new_opt<<"= (distinct from --"<<new_opt<<") detected!\n"; //!!?? Push an "" param?
 					}
-				} else values_to_take = known_options[new_opt]; // Take the next arg(s) instead, if needed
-#undef _ARG_HAS_EQ
+				} else values_to_take = opt_rules[new_opt]; // Take the next arg(s) instead, if needed
 			} else if (arg[1] != arg[0]) { // a real short opt, or short opt. aggregate
 //!!				return proc_next("-" + arg.substr(1), next_arg_index, ...state/mode);
 				for (auto c : arg.substr(1)) {
 					new_opt = std::string(1, c);
-					handle_duplicate(new_opt);
-					named_args[new_opt];
+					handle_duplicate(new_opt); // Err, drop prev. params, or do nothing
+					named_args[new_opt]; // Register (with no new params (yet))
 				}
-			} else { // -- (by default) or //whatever (always) are positional
-				assert(arg[1] == arg[0]); // (In case I'd reshuffle the cond. above...)
+			} else { // `--` is a positional arg. if opted in (FWIW, `//...` always is)
+				assert(arg[1] == arg[0]); // (In case I reshuffle the cond. above...)
 				if (arg == "--" && !(flags & DashDashIsPositional)) {
 					options_done = true;
 					return proc_next(new_opt, 0, next_arg_index, options_done);
@@ -173,7 +183,7 @@ protected:
 			// Add the option with an empty param list to start with:
 	//std::cerr << "ready to take next arg as param, if expects any.\n";
 			named_args[new_opt];
-			return proc_next(new_opt, known_options[new_opt], next_arg_index, options_done);
+			return proc_next(new_opt, opt_rules[new_opt], next_arg_index, options_done);
 		}
 
 	process_as_positional:
@@ -188,16 +198,18 @@ protected:
 	};
 };
 
-// C++ doesn't let us keep these where they belong ("in non-namespace scope") :-/ (MSVC does, tho.)
-template <> inline bool     Args::OptStr::as() const { return *this != "0" && *this != "false" && *this != "off" && *this != "no"  && *this != "disabled"; };
+// C++ doesn't let us keep these in-class, where they belong. :-/ (MSVC does though, so it is possible!)
+template <> inline bool     Args::OptStr::as() const { return set() /* But not: && !empty(), to support `--opt` (and `--opt=`) still being true! */
+	&& *this != "0" && *this != "false" && *this != "off" && *this != "no"  && *this != "disabled"; };
 template <> inline int      Args::OptStr::as() const { try { return std::stoi (*this); } catch(...) { return 0; } }
 template <> inline long     Args::OptStr::as() const { try { return std::stol (*this); } catch(...) { return 0; } }
 template <> inline unsigned Args::OptStr::as() const { try { return std::stoul(*this); } catch(...) { return 0; } }
 template <> inline float    Args::OptStr::as() const { try { return std::stof (*this); } catch(...) { return 0; } }
 template <> inline double   Args::OptStr::as() const { try { return std::stod (*this); } catch(...) { return 0; } }
+Args::OptStr::operator bool() const { return as<bool>(); }
+
 // An op<< to print without casting (to std::string):
 template <typename Out>
 Out& operator << (Out& out, const Args::OptStr& s) { out.put(static_cast<const std::string&>(s)); return out; }
 
-#define _ASDCVHF374Y192S84DTYBF87HY39486CVATY_
-#endif//_ASDCVHF374Y192S84DTYBF87HY39486CVATY_
+#endif //ASDCVHF374Y192S84DTYBF87HY39486CVATY

@@ -7,7 +7,7 @@ FEATURES
 - [x] Classic named (option) and unnamed (positional) arguments
       - [x] intermixed
 - [x] Prefix char either - or / freely mixed,
-      - [ ] but that can be disabled
+      - [x] but / can be disabled
 - [x] Both short and long options: -x --long
       - [x] Long options only as --long (so //whaaat is always positional)
 - [x] Aggregated short options: -xyz
@@ -42,9 +42,10 @@ FEATURES
       - [x] The last used argc/argv are available as args.argc, args.argv
             (in case they're needed outside of main(), e.g. via myApp.args)
 - [x] exename(): argv[0], but stripping the path and
-      - [x] the extension (".exe" by default, but -> exename(false, ".mysuffix"),
+      - [x] the extension (".exe" by default, but -> exename(false, ".suffix"),
       - [x] unless its "true value" :) is requested with exename(true)
 - [x] Quick bool check if there have been any args: if (args), if (!args)
+- [x] Check if an arg. was specified (but not as false): if (args["x"])...
 
 
 EXAMPLES
@@ -67,12 +68,12 @@ EXAMPLES
 			cout << "Usage: " << args.exename() << " "
 		             << "[-h] [-x] [--long] [whatever...]\n";
 
-		if (args["x"])
-			cout << "  'x' was set\n";
+		if (args["x"]) // Predicate check
+			cout << "  'x' was set, and if it also has a value, it's not false\n";
 
-		if (auto x = args["long"]) // x is like optional<string>, but with the direct std::string API!
+		if (auto x = args["long"]; x.set()) // x is like optional<string>, but with the std::string API!
 			cout << "  'long' was set to"
-			     << (x.empty() ? "nothing"s : x) // "..."s because x is a string; the ternary branches must match.
+			     << (x.empty() ? "nothing"s : x) // "..."s works (and needed) because x is (derived from) std::string
 			     << '\n';
 
 		for (auto a: args.positional())
