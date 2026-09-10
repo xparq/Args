@@ -1,4 +1,4 @@
-// Tiny cmdline processor 3.0.0 (https://github.com/xparq/Args)
+// Tiny cmdline processor 3.0.1 (https://github.com/xparq/Args)
 #ifndef ASDCVHF374Y192S84DTYBF87HY39486CVATY
 #define ASDCVHF374Y192S84DTYBF87HY39486CVATY
 
@@ -64,7 +64,7 @@ public:
 		explicit OptStr(std::string str) : std::string(str), set_(true) {}
 		template <typename T> T get_or(T deflt) const { return set_ ? as<T>() : deflt; }
 		template <typename T> T as() const { static_assert(!sizeof(T), "Unsupported getter!"); }
-		explicit operator bool() const; //!! { return as<bool>(); } <- DOESN'T COMPILE HERE! :-/
+		explicit inline operator bool() const; //!! { return as<bool>(); } <- DOESN'T COMPILE HERE! :-/
 	};
 
 	// Get the value of a named arg. as OptStr (coerced via as<bool>() in bool contexts)
