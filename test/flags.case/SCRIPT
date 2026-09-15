@@ -16,6 +16,7 @@ debug
 -------- POSITIONAL (0):
 -------- ERROR: 0
 flags: 0 (hex: x0)
+debug: true
 "
 
 # RepeatAppends (flag:2)
@@ -29,4 +30,5 @@ flags = 2
 2, junk, b
 -------- ERROR: 0
 flags: 2 (hex: x2)
+debug: true
 "

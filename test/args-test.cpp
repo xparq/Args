@@ -1,11 +1,10 @@
 /*
-  Test app to allow resetting the flags + reparsing the args...
+  Test app to allow setting custom flags from the cmdline, etc.
 
-  This file can be also be #included from test cases, to keep its behavior,
-  but alter the config!
+  This file can be also be #included from test cases, to reuse it with
+  altered config (i.e. default flags), like:
 
-  E.g.:
-	#define FLAGS Args::RepeatAppends,
+	#define FLAGS Args::RepeatAppends, // Must append a comma!
 	#include "args-test.cpp"
 */
 
@@ -113,12 +112,14 @@ int main(int argc, char** argv)
 	cout << "-------- POSITIONAL ("<< args.positional().size() <<"): \n"
 	     << listvals(args.positional(), "", "\n"); // only \n it if non-empty
 
+
 if (args["debug"]) {
 	cout << "-------- ERROR: " << dec << args.error << '\n';
 	cout << "flags: " << flags << " (hex: x" << hex << flags << ")\n";
+	cout << "debug: " << args["debug"] << "\n";
 }
 	if (args["cmdgen"]) { cout << args.exename() << " "; dumpargs(args); cout << '\n'; }
 
 
 	return 0;
-}
+} // main

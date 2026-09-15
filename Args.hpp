@@ -1,4 +1,4 @@
-// Tiny cmdline processor 4.0.0 (https://github.com/xparq/Args)
+// Tiny cmdline processor 4.1.0 (https://github.com/xparq/Args)
 #ifndef ASDCVHF374Y192S84DTYBF87HY39486CVATY
 #define ASDCVHF374Y192S84DTYBF87HY39486CVATY
 
@@ -163,6 +163,8 @@ protected:
 					} else {
 		//std::cerr << "--"<<new_opt<<"= (distinct from --"<<new_opt<<") detected!\n";
 						named_args[new_opt].emplace_back("");
+						if (opt_rules[new_opt]) error |= Error::ParameterMissing; // Maybe `--opt= x`, instead of `--opt=x`
+						return proc_next(new_opt, 0, next_arg_index, options_done);
 					}
 				} else values_to_take = opt_rules[new_opt]; // Take the next arg(s) instead, if needed
 			} else if (arg[1] != arg[0]) { // a real short opt, or short opt. aggregate
@@ -219,6 +221,8 @@ Args::OptStr::operator bool() const { return as<bool>(); }
 
 // An op<< to print without casting (to std::string):
 template <typename Out>
-Out& operator << (Out& out, const Args::OptStr& s) { out.put(static_cast<const std::string&>(s)); return out; }
+Out& operator << (Out& out, const Args::OptStr& s) {
+	out << (s.set() && !s.assigned() ? "true" : static_cast<const std::string&>(s));
+	return out; }
 
 #endif //ASDCVHF374Y192S84DTYBF87HY39486CVATY
