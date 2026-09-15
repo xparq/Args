@@ -1,0 +1,17 @@
+RUN args-test --flags=512 /x
+
+EXPECT "\
+-------- NAMED (1):
+flags = 512
+-------- POSITIONAL (1):
+/x
+"
+
+
+RUN args-test /x
+
+EXPECT "\
+-------- NAMED (1):
+x
+-------- POSITIONAL (0):
+"

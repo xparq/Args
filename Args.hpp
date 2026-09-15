@@ -1,4 +1,4 @@
-// Tiny cmdline processor 3.1.0 (https://github.com/xparq/Args)
+// Tiny cmdline processor 4.0.0 (https://github.com/xparq/Args)
 #ifndef ASDCVHF374Y192S84DTYBF87HY39486CVATY
 #define ASDCVHF374Y192S84DTYBF87HY39486CVATY
 
@@ -22,6 +22,7 @@ public:
 		//!! Not yet: IgnoreCase     = 128,    // option names are case-insensitive (default: case-sensitive)
 		//!! Not yet: Greedy         = 256,    // unknown options take as many params as they can (default: only --unknown= takes 1) (GH #43)
 		NoSlashOptions = 512,                  // only dashes
+		NoColonAssign = 1024,                  // --opt:x is not --opt=x (but an arg named "opt:x")
 	};
 	unsigned flags = Defaults;   // (not the enum, to avoid some annoying C++ restrictions)
 
@@ -56,28 +57,31 @@ public:
 
 	void clear() { named_args.clear(); positional_args.clear(); }
 
-	bool has  (const std::string& opt) const { return named().find(opt) != named().end(); }
+	bool has(const std::string& opt) const { return named().find(opt) != named().end(); }
 
 	// Poor man's optional<string> (used by op[] below)
 	struct OptStr : public std::string {
-		bool set_ = false;  // Was the arg specified at all? (I.e. args.has(*this))
+		bool set_ = false; // Was the arg. specified at all? (I.e. Args.has(*this))
+		bool assigned_ = false; // Was a value assigned to it (e.g. even just --opt=)?
 		bool set() const { return set_; } // Note: complements the inherited empty()
+		bool assigned() const { return assigned_; }
 		         OptStr() noexcept = default;
-		explicit OptStr(std::string str) : std::string(str), set_(true) {}
+		explicit OptStr(std::string str, bool assigned = true) : std::string(str), set_(true), assigned_(assigned) {}
 		template <typename T> T get_or(T deflt) const { return set_ ? as<T>() : deflt; }
 		template <typename T> T as() const { static_assert(!sizeof(T), "Unsupported getter!"); }
 		explicit inline operator bool() const; //!! { return as<bool>(); } <- DOESN'T COMPILE HERE! :-/
 	};
 
 	// Get the value of a named arg. as OptStr (coerced via as<bool>() in bool contexts)
-	// Note: `if (["x"])` for `--x`, or `-x` is true, BUT SO IS `--x=` (unless explicitly
-	// set to false (like `--x=off`). So, `x.as<bool>()` is true when x.empty()!
-	// It's always cleaner to check with .set() explicitly if there's any ambiguity:
+	// Note: `if (["x"])` for `--x`, or `-x` is true (unless explicitly set to false,
+	// e.g. like `--x=off`), so `x.as<bool>()` can be true even if x.empty().
+	// (`--x=` evaluates to false, and is .empty() too.)
+	// It's always cleaner to check .set() explicitly, if there's any ambiguity:
 	// `if (auto x = args["x"]; x.set()) cfg.x = x.as<float>();`
 	// or better yet: `cfg.x = args["x"].get_or(3.14f)`.
-	// (Note: if ["x"] just meant "was x set?", it'd need to return true also for `--x=false`!)
+	// (Note: if ["x"] just meant "was x set?", it'd have to be true also for `--x=false`!)
 	OptStr operator[](const std::string& opt) const { return !has(opt) ? OptStr()
-	                                                         : !named().at(opt).size() ? OptStr("")
+	                                                         : !named().at(opt).size() ? OptStr("", false)
 	                                                         : OptStr(named().at(opt)[0]); }
 	// Get the nth positional arg, or "" if none:
 	std::string operator[](unsigned n) const { return positional().size() > n ? positional()[n] : ""; }
@@ -139,7 +143,7 @@ protected:
 				new_opt = arg.substr(2); // OK, we don't check now... ;)
 				// Extract any =value right now, because the next loop cycle can't (even see it)!
 				//! This also allows --unknown=value, so no need for a rule for each arg
-				auto eqpos = new_opt.find_first_of(":=");
+				auto eqpos = new_opt.find_first_of(flags & NoColonAssign ? "=" : ":=");
 				bool arg_has_eq = eqpos != std::string::npos;
 				if (arg_has_eq) new_opt = new_opt.substr(0, eqpos); // Chop off the =... from the opt. name
 				handle_duplicate(new_opt);
@@ -157,7 +161,8 @@ protected:
 						return proc_next(new_opt, pc<-1? pc+1 : (pc? pc-1 : 0), //!! The pc<-1 case is bogus/incomplete!
 							next_arg_index, options_done);
 					} else {
-		//std::cerr << "--"<<new_opt<<"= (distinct from --"<<new_opt<<") detected!\n"; //!!?? Push an "" param?
+		//std::cerr << "--"<<new_opt<<"= (distinct from --"<<new_opt<<") detected!\n";
+						named_args[new_opt].emplace_back("");
 					}
 				} else values_to_take = opt_rules[new_opt]; // Take the next arg(s) instead, if needed
 			} else if (arg[1] != arg[0]) { // a real short opt, or short opt. aggregate
@@ -201,8 +206,10 @@ protected:
 };
 
 // C++ doesn't let us keep these in-class, where they belong. :-/ (MSVC does though, so it is possible!)
-template <> inline bool     Args::OptStr::as() const { return set() /* But not: && !empty(), to support `--opt` (and `--opt=`) still being true! */
-	&& *this != "0" && *this != "false" && *this != "off" && *this != "no"  && *this != "disabled"; };
+template <> inline bool     Args::OptStr::as() const {
+	if ((assigned() && empty()) || !set()) return false; // --opt= is false since 4.0.0
+	return /* Not: !empty() &&..., as --opt is still true! */
+		*this != "0" && *this != "false" && *this != "off" && *this != "no"  && *this != "disabled"; };
 template <> inline int      Args::OptStr::as() const { try { return std::stoi (*this); } catch(...) { return 0; } }
 template <> inline long     Args::OptStr::as() const { try { return std::stol (*this); } catch(...) { return 0; } }
 template <> inline unsigned Args::OptStr::as() const { try { return std::stoul(*this); } catch(...) { return 0; } }

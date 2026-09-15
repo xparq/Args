@@ -2,8 +2,18 @@ RUN args-test --std:c++20 --stdeq=c++latest --empty:
 
 EXPECT "\
 -------- NAMED (3):
-empty
+empty = 
 std = c++20
 stdeq = c++latest
+-------- POSITIONAL (0):
+"
+
+
+RUN args-test --flags=1024 --empty:
+
+EXPECT "\
+-------- NAMED (2):
+empty:
+flags = 1024
 -------- POSITIONAL (0):
 "
