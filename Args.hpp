@@ -1,4 +1,4 @@
-// Tiny cmdline processor 3.0.1 (https://github.com/xparq/Args)
+// Tiny cmdline processor 3.1.0 (https://github.com/xparq/Args)
 #ifndef ASDCVHF374Y192S84DTYBF87HY39486CVATY
 #define ASDCVHF374Y192S84DTYBF87HY39486CVATY
 
@@ -56,10 +56,12 @@ public:
 
 	void clear() { named_args.clear(); positional_args.clear(); }
 
+	bool has  (const std::string& opt) const { return named().find(opt) != named().end(); }
+
 	// Poor man's optional<string> (used by op[] below)
 	struct OptStr : public std::string {
-		bool set_ = false;  // Was the arg specified at all?
-		bool set() const { return set_; } // Note: complements the inherited empty() nicely.
+		bool set_ = false;  // Was the arg specified at all? (I.e. args.has(*this))
+		bool set() const { return set_; } // Note: complements the inherited empty()
 		         OptStr() noexcept = default;
 		explicit OptStr(std::string str) : std::string(str), set_(true) {}
 		template <typename T> T get_or(T deflt) const { return set_ ? as<T>() : deflt; }
@@ -74,15 +76,15 @@ public:
 	// `if (auto x = args["x"]; x.set()) cfg.x = x.as<float>();`
 	// or better yet: `cfg.x = args["x"].get_or(3.14f)`.
 	// (Note: if ["x"] just meant "was x set?", it'd need to return true also for `--x=false`!)
-	OptStr operator[](const std::string& opt) const { return named().find(opt) == named().end() ?
-	                                                         OptStr()   :       !named().at(opt).size() ?
-	                                                         OptStr("") : OptStr(named().at(opt)[0]); }
+	OptStr operator[](const std::string& opt) const { return !has(opt) ? OptStr()
+	                                                         : !named().at(opt).size() ? OptStr("")
+	                                                         : OptStr(named().at(opt)[0]); }
 	// Get the nth positional arg, or "" if none:
 	std::string operator[](unsigned n) const { return positional().size() > n ? positional()[n] : ""; }
 	// Get the nth param. of "opt" (first (0th) by default), or "":
-	std::string operator()(const std::string& opt, unsigned n = 0) const { return named().find(opt) == named().end() ?
-	                                                                      "" : (named().at(opt).size() <= n ?
-	                                                                      "" :  named().at(opt)[n]); }
+	std::string operator()(const std::string& opt, unsigned n = 0) const { return !has(opt) ? ""
+	                                                                       : (named().at(opt).size() <= n ? ""
+	                                                                       :  named().at(opt)[n]); }
 
 	const std::vector<std::string>& positional() const { return positional_args; }
 	      std::vector<std::string>& positional()       { return positional_args; }
@@ -91,12 +93,12 @@ public:
 		// Hint: to prevent casual named()[...] calls from silently adding
 		// missing keys (std::map does that!), use the Args obj. via a const ref!
 
-	// Remember: this is coming from the command that eventually launched the exe, so it
-	// could be "anything"... E.g. no guarantee that it ends with ".exe" on Windows etc.
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wpedantic" //!!?? Why was this needed? Seems to make no diff. for the test builds.
 #endif
+	// Remember: this is coming from the command that eventually launched the exe, so it
+	// could be "anything"... E.g. no guarantee that it ends with ".exe" on Windows etc.
 	std::string exename(bool keep_as_is = false, std::string ext = ".exe") const {
 		// Anyway, if it has a path, remove it:
 		std::string basename(std::string(argv[0]).substr(std::string(argv[0]).find_last_of("/\\") + 1));

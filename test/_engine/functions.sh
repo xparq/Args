@@ -113,9 +113,14 @@ abspath_fixup(){
 		if which cygpath >/dev/null 2>/dev/null; then
 			cygpath -u "$p" 2>/dev/null
 		else
-			#!!Mostly untested! (Spaces, idempotency etc.)
-			#!!Actually, it's NOT idempotent: prepends / to POSIX paths INCORRECTLY
-			echo -n "/$p" | sed -e 's/\\/\//g' -e 's/:/\//'
+			# Last-ditch manual c:\... -> /c/... on Windows
+			if [ "$OS" = "Windows_NT" ];  then
+				#!!Mostly untested! (Spaces, idempotency etc.)
+				#!!Actually, it's NOT idempotent: prepends / to ALREADY POSIX paths INCORRECTLY
+				echo -n "/$p" | sed -e 's/\\/\//g' -e 's/:/\//'
+			else
+				echo "$p"
+			fi
 		fi
 	else
 		# Alas, mixed mode (-m) replaces quotes with a some plceholder char []!
@@ -248,7 +253,7 @@ EXPECT(){
 	EXPECT=${EXPECT}$*
 }
 EXCEPT(){
-	FATAL "Well, well... Been there, done that! ;)"
+	FATAL "Well, well... Been there, done that!... (Check the spelling of 'EXPECT'! ;) )"
 }
 
 
@@ -295,19 +300,49 @@ normalize_crlf(){
 
 #-----------------------------------------------------------------------------
 get_make_flavor(){
-	#!!This is really stupid yet, sorry...
+	#!! This is pretty simplistic yet, sorry...
+
+	# `MAKE` is set?
 	if [ -n "$MAKE" ]; then
-		if which "$MAKE" >/dev/null 2>/dev/null; then
+		# Try directly first, as-is, because it may have a path, and
+		# the "get the first word" attempt, in case it also has options,
+		# would butcher the path if it has spaces! :-/
+		# This would still fail if it has BOTH options and a path with spaces,
+		# but I know no cure for that here, sorry. :-/
+		if command -v "$MAKE" >/dev/null 2>/dev/null; then
 			echo "$MAKE"
+			return 0
 		else
-			ERROR "Make tool was set to '$MAKE', but it can't be found!"
-			return 1
+			# Now try the first-word thing, as `make -s -p` is still a
+			# pretty likely use case, and it would also work even with
+			# a path WITHOUT spaces...
+			make_cmd=${MAKE%% *}
+			if command -v "$make_cmd" >/dev/null 2>/dev/null; then
+				echo "$MAKE"
+				return 0
+			else
+				ERROR "MAKE was set to '$MAKE', but it can't be found!"
+				return 1
+			fi
 		fi
-	elif [ "$TOOLSET" == "msvc" ]; then
-		echo nmake    # `-nologo` will be applied implicitly
-	else
-		#!!Umm... GNU make then, anyone?
+	fi
+
+	# Not set, try something...
+	if [ "$TOOLSET" = "msvc" ]; then
+		#!! This is pretty much hardcoded, as we're gonna call it directly
+		#!! anyway, with the MSVC+NMake-specific makefile...
+		#!! If it doesn't exist, the MSVC setup is broken anyway(?), and also,
+		#!! a parent script would hard-fail with an error telling the reason.
+		echo nmake    # `-nologo` will be added to it later
+	elif command -v make >/dev/null 2>/dev/null; then
+		echo make
+	elif command -v gnumake >/dev/null 2>/dev/null; then
 		echo gnumake
+#!!	elif #!! Try busybox-w32's builtin PDPMake...
+#!!		...
+	else
+		ERROR "MAKE was not set, and neither 'make' nor 'gnumake' was found!"
+		return 1
 	fi
 
 	return 0
@@ -360,7 +395,12 @@ build_dir(){
 	local build_dir="$1"
 	local add_makefile mkcmd dirsave result
 
+	#!! -> #91...:
 	MAKE=`get_make_flavor` || return $?
+	#!! This would still fail with spaces in the path! :-/
+	#!! Implementing #91 is really unavoidable!!
+	MAKE_TOOL=$(basename "${MAKE%% *}")
+	#!!MAKE_CMD="$MAKE"
 
 	#! The makefiles themselves can't easily examine wildcard sources, so:
 	#!!FAILED using -name 'a b' (instead of "a b") with BB's find! :-o
@@ -373,24 +413,50 @@ DEBUG "Build: No sources found -> nothing to do."
 			return 0
 	fi
 
-	if [ "$MAKE" == "nmake" ]; then
+
+	if [ "$MAKE_TOOL" = "nmake" ]; then
 		#!BEWARE: /nologo, instead of -nologo, made Git-sh expand it to /full/path/nologo! :)
 		#!(Well, path mangling is "mostly" disabled now, but only via some tentative heuristics yet!)
-		mkcmd="nmake -nologo"
+		if [ "$MAKE" = "nmake" ]; then
+			mkcmd="nmake -nologo"
+		else
+			# $MAKE is already not just `nmake`, so dont' mess with it!
+			mkcmd="$MAKE"
+		fi
 		add_makefile="-f ${_TEST_ENGINE_DIR}/asset/TC-Makefile.nmake"
 	else
-		if [ "$MAKE" != "gmake" ] && [ "$MAKE" != "gnumake" ]; then
-			WARNING "Using GNU-specific fallback makefile for '$MAKE'. Things may break!"
+		if [ -z "$("${MAKE%% *}" --version 2>/dev/null | grep GNU)" ]; then
+			WARNING "Using GNU-specific makefile with possibly non-GNU '$MAKE'! The build would likely fail!"
 		fi
+
+		# Detect BusyBox-w32's built-in make, and avoid it!
+		if [ "$(which "${MAKE%% *}" 2>/dev/null)" = "make" ]; then
+			WARNING "'make' seems to be a BusyBox applet, not GNU Make! Overriding it..."
+
+			#!! MAKE="full/path/make.exe" WORKED, confirming the issue...
+			#!! NOPE: MAKE="command -p $MAKE"
+			#!! NOPE: MAKE="env $MAKE"
+			#!! Whoa! This also worked, thankfuilly:
+			export BB_OVERRIDE_APPLETS=make
+			#!! But we could do even better; or at least this one would be more fun:
+			#!!MAKE="$MAKE.exe"
+			#!! NOTE: But... $MAKE may be a cmdline with opts... :-/ After #91 though
+			#!! that issue should vanish, and the .exe hack would be back in the game! ;)
+		fi
+
 		mkcmd="${MAKE}"
 		add_makefile="-f ${_TEST_ENGINE_DIR}/asset/TC-Makefile.gnumake"
 	fi
 
 	# If the TC has a local makefile (note: single-line TCs share one!),
 	# use that. Otherwise use a non-specific local Makefile, if that exists.
-	# Else, use an internal default ($MAKE-specific) makefile.
-	if [ -e "$build_dir/Makefile.$MAKE" ]; then
-		mkcmd="$mkcmd -f Makefile.$MAKE"
+	# Else, use an internal default ($MAKE-specific) makefile
+	#!!
+	#!! But... $MAKE may have path and/or options!... -> #91 (Add MAKE_FLAGS...)
+	#!! Here `basename` should at least deal with the path issue though:
+	#!!
+	if [ -e "$build_dir/Makefile.$(basename $MAKE)" ]; then
+		mkcmd="$mkcmd -f Makefile.$(basename $MAKE)"
 	elif [ ! -e "$build_dir/Makefile" ]; then   # use the internal if no local Makefile
 		mkcmd="$mkcmd $add_makefile"
 	fi
@@ -405,7 +471,10 @@ DEBUG "Build: No sources found -> nothing to do."
 	# This "resanitizing" can help bridge some incompatibilities across toolsets/sh
 	# versions (e.g. sh called from gnumake under MinGW & friends):
 	#! Also mind the frustrating var name uppercasing by BB... :-/
+#echo "_sh_ before fixup: [$_sh_]"
+#echo "_SH_ before fixup: [$_SH_]"
 	export _SH_=`abspath_fixup ${_sh_:-$_SH_}`
+#echo "_SH_ AFTER fixup: [$_SH_]"
 		#!!But this would fuck up _SH_ for the rest of the process back here! :-o
 		#!!So we should either save/restore it, or pass it to the build
 		#!!process with a different name!
@@ -419,6 +488,8 @@ DEBUG "Build: No sources found -> nothing to do."
 	dirsave=`pwd`
 		cd "$TEST_CASE_DIR"
 DEBUG "Launching $MAKE (as '$mkcmd') for dir '$TEST_CASE_DIR'..."
+#!! Alas, the built-in busybox-w32 make would choke on this:
+#!!DEBUG "'MAKE --version says: $($MAKE --version)"
 		$mkcmd
 		result=$?
 	cd "$dirsave"

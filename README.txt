@@ -66,13 +66,13 @@ EXAMPLES
 
 		if (!args || args["h"])
 			cout << "Usage: " << args.exename() << " "
-		             << "[-h] [-x] [--long] [whatever...]\n";
+		             << "[-h] [-x] [--long] [...]\n";
 
 		if (args["x"]) // Predicate check
-			cout << "  'x' was set, and if it also has a value, it's not false\n";
+			cout << "  'x' was set (to not false)\n";
 
 		if (auto x = args["long"]; x.set()) // x is like optional<string>, but with the std::string API!
-			cout << "  'long' was set to"
+			cout << "  'long' was set to "
 			     << (x.empty() ? "nothing"s : x) // "..."s works (and needed) because x is (derived from) std::string
 			     << '\n';
 

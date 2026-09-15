@@ -1,14 +1,22 @@
-#!!Leftover Windows dependency, clean it up!
-EXE=$(CASE).exe
-
 # BEWARE: GNUMake doesn't seem to support quoting target names with spaces, so:
 # https://stackoverflow.com/a/10571900/1479945
-space=$(subst ,, )
-espace=$(subst ,,\ )
-EXE_NAME_W_SPACES_ESCAPED=$(subst $(space),$(espace),$(EXE))
+ Space = $(subst ,, )
+eSpace = $(subst ,,\ )
+
+_BASENAME_W_SPACES_ESCAPED = $(subst $(Space),$(eSpace),$(CASE))
 # Note: would still fail on any other whitespace, of course...
 
-src=$(EXE_NAME_W_SPACES_ESCAPED:.exe=.cpp)
+# Only a single same-name .cpp is supported for now:
+SRC = $(_BASENAME_W_SPACES_ESCAPED).cpp
+
+ifeq "$(OS)" "Windows_NT"
+EXE = $(CASE).exe
+EXE_W_SPACES_ESCAPED = $(_BASENAME_W_SPACES_ESCAPED).exe
+else
+EXE = $(CASE)
+EXE_W_SPACES_ESCAPED = $(_BASENAME_W_SPACES_ESCAPED)
+endif
+
 
 #!!If no BUILD_DEPS_COMMON then TEST_DIR/ would break, but fortunately
 #!!TEST_DIR/. won't... Ehh... But then again, the test dir would most likely
@@ -18,13 +26,25 @@ src=$(EXE_NAME_W_SPACES_ESCAPED:.exe=.cpp)
 #!!itself below, so just adding an empty common dep (separated with a space)
 #!!would ALSO FAIL (unlike in NMAKE)... :-o
 ifeq ($(BUILD_DEPS_COMMON),)
-deps=$(src)
+deps = $(SRC)
 else
-_BUILD_DEPS_COMMON=$(TEST_DIR)/$(BUILD_DEPS_COMMON)
-deps=$(_BUILD_DEPS_COMMON) $(src)
+deps = $(TEST_DIR)/$(BUILD_DEPS_COMMON) $(SRC)
 endif
 
+
 # (The "real" $(SHELL) is no good on Windows, even if set!)
-GENERIC_BUILD_CMD=$(_SH_) -c ". build.sh \"$(CASE)\""
-$(EXE_NAME_W_SPACES_ESCAPED): $(deps)
-	@$(GENERIC_BUILD_CMD)
+ifeq "$(_SH_)" ""
+_SH_ = sh
+endif
+ifeq "$(_SH_)" "/" #!! Workaround until #90 is fixed!
+_SH_ = sh
+endif
+
+GENERIC_BUILD_CMD=$(_SH_) -c '. build.sh' dummy-1st-arg-will-be-ignored
+
+$(EXE_W_SPACES_ESCAPED): $(deps)
+	$(GENERIC_BUILD_CMD) "$(CASE)" "$(EXE)"
+#!!NOT:	$(GENERIC_BUILD_CMD) "$(CASE)" "$@" # $@ gets unescaped here; but GNUMake still fucks up the quoting! :-o
+#!!NOT:	$(GENERIC_BUILD_CMD) "$(CASE)" "$(EXE_NAME_W_SPACES_ESCAPED)"
+#	echo "PATH=$(PATH)"
+#	echo "GENERIC_BUILD_CMD = $(GENERIC_BUILD_CMD)"

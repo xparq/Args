@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 if [ -z "$_TEST_ENGINE_DIR" ]; then
 # Will become a problem if this gets changed to a sourced sub-script:
 #	echo "- ERROR: test env. uninitialized. (Run \"init_once.sh\" before \"$0\"!)";
@@ -153,10 +153,10 @@ testcase_status=0
 # But a good chunk of "meta" errors overlap with having stderr output...
 #!! Could also check a completion flag, though, like start with a "tentative"
 # ABORTED flag, which should be cleared at the end.
-retval=$?; if [ -s "$errfile" ] || [ ! -z "$ABORTED" ]; then
+retval=$?; if [ ! -z "$ABORTED" ]; then #!! || [ -s "$errfile" ]; then
 	ERROR "The test script was terminated (with shell exit code $retval)!"
 	if [ ! -z "$ABORTED" ]; then DEBUG "ABORT req.: $ABORTED"; fi
-	DEBUG "accumulated cmd stderr: `cat \"$errfile\"`"
+#!!	DEBUG "accumulated cmd stderr: `cat \"$errfile\"`"
 	echo -e "  `cat \"$errfile\"`"
 	echo "  !!!!!!!!!!!!!!!!!!!!!!!!! ABORTED !!!!!!!!!!!!!!!!!!!!!!!!!"
 	exit $_ABORT_
@@ -190,6 +190,8 @@ fi
 if [ "$testcase_status" == "0" ]; then
 	echo "  OK."
 else
+#!!	DEBUG "accumulated cmd stderr: `cat \"$errfile\"`"
+	echo -e "  `cat \"$errfile\"`"
 	echo "  !!!!!!!!!!!!!!!!!!!!!!!!! FAILED !!!!!!!!!!!!!!!!!!!!!!!!! (status: $testcase_status)"
 fi
 

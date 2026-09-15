@@ -1,14 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 unset BB_GLOBBING
 #set -x
 
-_selfdir=`dirname $0`
+_selfdir=`dirname "$0"`
 # Pre-init these, as this is the best chance for it:
-export _TEST_ENGINE_DIR=`realpath $_selfdir`
+export _TEST_ENGINE_DIR=`realpath "$_selfdir"`
 #!! This will be invalid when sourced (not exec'ed) by a proxy script (-> #51):
 
 if [ -z "$TEST_DIR" ]; then
-	TEST_DIR=`realpath $_TEST_ENGINE_DIR/..`
+	TEST_DIR=`realpath "$_TEST_ENGINE_DIR/.."`
 	#!!
 	#!! Check & "refine"...
 	#!!
@@ -20,7 +20,7 @@ fi
 if [ -z "$TEST_DIR" ]; then FATAL "No kidding, TEST_DIR's still empty?!" 125; fi
 
 # As this is our main/only "anchor dir", it must be an abs. path:
-export TEST_DIR="`realpath $TEST_DIR`"
+export TEST_DIR=`realpath "$TEST_DIR"`
 # !! This (way too arbitrary) check is pretty useless, and is basically just a placeholder/reminder:
 	if [ -z "$TEST_DIR" ] || [ ! -f "$TEST_DIR/run" ] && [ ! -f "$TEST_DIR/run.sh" ] && [ ! -f "$TEST_DIR/run.cmd" ]; then
 		FATAL "Invalid dir. structure? \"$_maybe_TEST_DIR/run[.sh|.cmd]\" not found!" 126;
@@ -29,7 +29,7 @@ export TEST_DIR="`realpath $TEST_DIR`"
 echo "Using TEST_DIR${_reason}: $TEST_DIR"
 
 
-. $_TEST_ENGINE_DIR/init_once.sh    # <- FATALs could abort the process here.
+. "$_TEST_ENGINE_DIR/init_once.sh"    # <- FATALs could abort the process here.
 
 
 # `export` is critical for $(()), subshelled loops etc.!
@@ -171,7 +171,13 @@ echo "$list" | while IFS= read -r name; do
 
 	export _TC_CRASHFILE="$TMP_DIR/`basename \"$name\"`.CRASH" # Should be created/deleted by the TC wrapper script
 
-		"$tc_runner" "$name"
+		#! NOTE: the stdin redirect below is CRITICAL for running on WSL!
+		#! One day a test script accidentally launched the Windows version
+		#! of its auto-built executable test artifact (as $case.exe), which
+		#! worked just fine on WSL, but apparenttly broke the stdin buffer
+		#! this loop here has been feeding on, making it terminate abruptly
+		#! after the successful run of the misfiring test case!
+		"$tc_runner" "$name" < /dev/null
 
 	result=$?
 

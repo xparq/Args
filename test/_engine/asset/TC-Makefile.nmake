@@ -25,4 +25,4 @@ deps=$(_BUILD_DEPS_COMMON) $(src_quoted)
 # (The "real" $(SHELL) is no good on Windows, even if set!)
 GENERIC_BUILD_CMD=$(_SH_) -c ". build.sh \"$(CASE)\""
 $(TARGET_NAME_W_SPACES_QUOTED): $(deps)
-	@$(GENERIC_BUILD_CMD)
+	@$(GENERIC_BUILD_CMD) "$(EXE)"

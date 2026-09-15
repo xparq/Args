@@ -33,6 +33,8 @@ fi
 # Add (prepend! -> #36) the engine dir to the path
 #-----------------------------------------------------------------------------
 p=`abspath_fixup $_TEST_ENGINE_DIR`
+#DEBUG "_TEST_ENGINE_DIR=$_TEST_ENGINE_DIR"
+#DEBUG "p=$p"
 PATH="$p`get_path_sep`$PATH"
 # ^^^ Yeah, nice, except this doesn't help with running scripts directly with
 #     `sh script.sh`, as PATH lookup is not required (even discouraged) for that!
